@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Environment
+.env
+.env.*
+
+# Data and runs — never committed (D12); they live in ~/.trueodds/
+data/
+runs/
+.trueodds/
+*.parquet
+*.arrow
+
+# Model weights
+models/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Logs
+logs/
+events.out.tfevents.*
+harness/results/_scratch/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp

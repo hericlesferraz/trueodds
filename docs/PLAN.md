@@ -1,0 +1,183 @@
+# Plan
+
+Work one phase at a time. A phase is done when **every exit criterion is met and measured by the
+harness**. Numeric targets marked *(initial)* are starting points; revise them in `DECISIONS.md`
+once Phase 0 produces the baselines.
+
+| Phase | Goal | Exit when |
+|---|---|---|
+| 0 | Environment, data and harness, no training | ModernBERT runs in bf16 on this GPU; every dataset is converted with counts per split; the harness scores accuracy, ECE, NLL and Brier and reports the baselines on test and held-out; throughput is measured |
+| 1 | Model and training loop, proved on a tiny set | The model overfits 200 examples; option masking, truncation and permutation are proved by tests |
+| 2 | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
+| 3 | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
+| 4 | Inference (v1) | `predict()` answers in tens of milliseconds, and many questions about one state are measured as a batch |
+| 5 | Experiments (after v1) | Each one is a run compared with the v1 report |
+
+The steps of the original plan map onto these phases: setup and data are Phase 0, the model is
+Phase 1, and evaluation is built in Phase 0 as the harness instead of after training (D1).
+
+---
+
+## Phase 0 — Environment, data and harness
+
+Nothing is trained in this phase. It builds the measuring instruments and the data, and proves them
+with known answers.
+
+### Environment
+
+Known state on 2026-09-23: RTX 5060 Ti 16 GB (Blackwell, compute capability 12.0), uv, Python 3.12
+through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
+
+- [ ] Package skeleton with uv: `pyproject.toml`, `src/trueodds/`, `tests/`, ruff, pytest. GPU
+      dependencies (torch, flash-attn if it builds) in an optional `gpu` extra so the unit tests
+      run without a GPU.
+- [ ] Load `answerdotai/ModernBERT-base` on the GPU and run a bf16 forward pass on a batch of
+      512-token sequences.
+- [ ] Find out whether flash-attn builds for Blackwell. ModernBERT uses it to skip padding; without
+      it, PyTorch SDPA is the fallback. Record which one runs, and the throughput of each that
+      works, in `docs/SETUP.md` (D11).
+- [ ] Measure training throughput (sequences per second, forward and backward, bf16) at 128, 256
+      and 512 tokens, with and without gradient checkpointing, and the largest micro-batch that
+      fits under 15 GB. From it, estimate the time of one epoch over the Phase 2 mix (D10).
+- [ ] Record any workaround in `docs/SETUP.md`.
+
+### Data
+
+- [ ] Write `specs/001-example-format.md`: the unified schema
+      `{id, source, split, state, question, options[], label_idx, template_id}`, the split rule
+      (D6), the question templates and the held-out template per task (D8), and the dedup rule
+      (D5).
+- [ ] One converter per dataset, in `src/trueodds/data/`, each with a unit test on a few hand-made
+      rows: BoolQ, MNLI, ARC-Easy and ARC-Challenge, HellaSwag, MMLU auxiliary train, AG News,
+      Yahoo Answers Topics, CommonsenseQA, DBpedia-14.
+- [ ] 3–5 question paraphrases per task, sampled at random in training, plus one paraphrase per
+      task that is never trained on (D8).
+- [ ] Cap each training dataset (initially ~50k training examples) so the large ones do not
+      dominate (D4).
+- [ ] Remove duplicates across datasets by normalized question and options text. In particular,
+      MMLU auxiliary train contains ARC among its sources; nothing in the training data may also be
+      in any test split or held-out dataset (D5).
+- [ ] `scripts/prepare_data.py` downloads, converts and writes everything to `~/.trueodds/data/`,
+      and prints counts per source and split, option-count distribution and label distribution.
+- [ ] Check each dataset's license at its source and list them in `docs/LICENSES.md`.
+
+### Harness
+
+- [ ] Write `specs/002-run-report.md`: the results JSON (run, checkpoint, per source and split:
+      n, accuracy, ECE, NLL, Brier, and the baselines), and the exact metric definitions (D7).
+- [ ] `harness/metrics.py`: accuracy, ECE (15 equal-width bins on the top-1 probability), NLL,
+      Brier, and the data for a reliability diagram. Proved on fakes: a model whose probabilities
+      are sampled correctly has ECE near 0; a model that is always 100% sure and right half the
+      time has ECE 0.5.
+- [ ] Baselines per source: random (mean of 1/K) and majority class (the most frequent label index
+      or label text in that source's training split; for held-out, in its own test split, since it
+      has no training split — stated as such in the report).
+- [ ] `harness/evaluate.py` takes anything that returns a probability per option and writes the
+      results JSON; `harness/report.py` turns a set of JSONs into a comparison table.
+- [ ] Baseline run, before any model: the results JSON with only the baselines filled in, on every
+      test split and both held-out datasets.
+
+**Exit criteria**
+- A bf16 forward pass of ModernBERT-base runs on the GPU; attention backend, throughput and peak
+  VRAM are in `docs/SETUP.md`.
+- `~/.trueodds/data/` holds every dataset in the spec 001 format; the counts are recorded; the
+  overlap check reports 0 training examples shared with any test split or held-out dataset.
+- `uv run pytest` passes, including the metric tests on known answers.
+- The baseline results JSON exists in `harness/results/`.
+- The Phase 2 targets are written in `DECISIONS.md`, from the baselines.
+
+---
+
+## Phase 1 — Model and training loop, proved on a tiny set
+
+**Tasks**
+- [ ] The model (D2): ModernBERT-base encodes each `(state, question, option)` sequence, a pooled
+      vector goes through a linear layer to one score, and the scores of one question are
+      softmaxed across its options.
+- [ ] Variable option counts: pad the options of a batch to the largest K, and give padded options
+      a score of −inf before the softmax.
+- [ ] Truncation to 512 tokens: the question and the option are never cut; the state is cut to
+      what is left (D9).
+- [ ] Training loop: bf16, AdamW, linear warmup then linear decay, gradient accumulation, optional
+      gradient checkpointing, evaluation and checkpoint every N steps, the best checkpoint kept by
+      dev accuracy. Logs to TensorBoard. One YAML per run in `configs/`.
+- [ ] Unit tests, on a tiny random model: a padded option never gets probability > 0; the
+      probabilities of one question sum to 1; shuffling the options shuffles the probabilities the
+      same way (the model has no position bias across options, by construction); truncation keeps
+      the question and the option whole.
+- [ ] Overfit run: 200 training examples, mixed across sources.
+
+**Exit criteria**
+- On the 200 examples, training accuracy reaches 100% and loss falls below 0.05 *(initial)*.
+- The unit tests above pass.
+- Peak VRAM of the training loop at the Phase 2 settings is measured and under 15 GB.
+
+---
+
+## Phase 2 — Full training
+
+**Tasks**
+- [ ] Full run on the Phase 0 mix: learning rate in 2e-5 to 5e-5, 6% warmup, 2–3 epochs, effective
+      batch of ~32 questions. Settings in `configs/`.
+- [ ] Choose the pooling (CLS or mean) with two short runs compared on dev (D2).
+- [ ] Evaluate the best checkpoint with the harness on every test split and both held-out datasets.
+- [ ] Accuracy on the held-out question templates, next to the trained templates (D8).
+- [ ] Save the run's report next to the baseline in `harness/results/`.
+
+**Exit criteria** *(initial; revised from the Phase 0 baselines)*
+- On every training dataset's test split: accuracy clearly above the majority baseline (the exact
+  margin per dataset is set in Phase 0).
+- On CommonsenseQA and DBpedia-14, never trained on: accuracy at least 10 points above the higher
+  of the random and majority baselines.
+- On the held-out templates: accuracy within 3 points of the trained templates. A larger gap means
+  the model reads a phrasing, not the question.
+
+---
+
+## Phase 3 — Calibration
+
+**Tasks**
+- [ ] Fit one temperature on the dev split (all training sources together) by minimizing NLL.
+- [ ] Report ECE, NLL and Brier before and after, per source, on test and on held-out.
+- [ ] Reliability diagrams before and after, for the pooled test split and for each held-out
+      dataset.
+- [ ] Report ECE by number of options (2, 3, 4, 5, 10, 14), since one temperature is shared by
+      questions with very different K (D7).
+
+**Exit criteria**
+- ECE after temperature scaling is lower than before on the pooled test split.
+- On the held-out datasets, the effect is reported whether it helps or not: the question is whether
+  a temperature fitted on seen data transfers to unseen data.
+
+---
+
+## Phase 4 — Inference (v1)
+
+**Tasks**
+- [ ] Write `specs/003-predict.md`: `predict(state, question, options) -> {option: probability}`
+      and the batch form, many questions about one state.
+- [ ] `predict()` loads the best checkpoint and its temperature.
+- [ ] `harness/latency`: p50 and p95 per request at K = 2, 4 and 14 options and states of 64, 256
+      and 480 tokens, after warmup; and the time for 10 and 50 questions about one state in one
+      batch, against the same questions one by one.
+- [ ] Optional: a small FastAPI endpoint around `predict()`.
+
+**Exit criteria** *(initial)*
+- One request with 4 options and a 256-token state: p50 ≤ 30 ms, p95 ≤ 60 ms on this GPU.
+- The batch timings are reported.
+- The README shows the results table and the reliability diagrams.
+
+---
+
+## Phase 5 — Experiments (after v1)
+
+Each experiment is one run, compared with the v1 report by the same harness.
+
+- **ModernBERT-large** instead of base, at the same settings.
+- **Shared state encoding** (D13): encode the state once and score every option and question
+  against it, closer to how Jev answers many questions about one state in one pass. Compared on
+  accuracy, calibration and the batch latency of Phase 4.
+- **Score head:** a numeric answer (regression) as a third kind of output, with its own metric and
+  a dataset to train it.
+- **Distilled labels for an own domain:** a local LLM labels questions about states of a domain
+  (for example, robot sensor readings), and the model is trained and measured on them.
