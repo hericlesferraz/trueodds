@@ -128,7 +128,8 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
       `trueodds` model (D24). *`src/trueodds/tracking.py`; `configs/phase2-base.yaml` tracks.*
 - [ ] Full run on the Phase 0 mix: learning rate in 2e-5 to 5e-5, 6% warmup, 2–3 epochs, effective
       batch of ~32 questions. Settings in `configs/`.
-- [ ] Choose the pooling (CLS or mean) with two short runs compared on dev (D2).
+- [x] Choose the pooling (CLS or mean) with two short runs compared on dev (D2).
+      *CLS: dev accuracy 0.711 vs 0.692 after 1,500 steps, ahead at every evaluation (D25).*
 - [ ] Evaluate the best checkpoint with the harness on every test split and both held-out datasets.
 - [ ] Accuracy on the held-out question templates, next to the trained templates (D8).
 - [ ] Save the run's report next to the baseline in `harness/results/`.

@@ -390,6 +390,27 @@ experiment where a local LLM labels data.
 
 ---
 
+## D25 — CLS pooling, chosen on dev by two short runs
+*2026-09-23, closes the pooling choice left open in D2*
+
+**Decision:** the model pools with the CLS vector. `configs/phase2-base.yaml` keeps `pooling: cls`.
+
+**Why:** two runs identical except for pooling (`configs/phase2-pool-cls.yaml`,
+`configs/phase2-pool-mean.yaml`: 1,500 steps of 32 questions, about 22% of an epoch, lr 3e-5 decayed
+to 0 over those steps, seed 0), scored on the full dev split (11,286 questions):
+
+| pooling | step 500 acc | step 1000 acc | step 1500 acc | NLL | ECE | Brier |
+|---------|-------------:|--------------:|--------------:|----:|----:|------:|
+| CLS     | 0.634 | 0.701 | **0.711** | **0.720** | 0.014 | **0.384** |
+| mean    | 0.589 | 0.668 | 0.692 | 0.758 | 0.013 | 0.405 |
+
+CLS leads at every evaluation, by 1.9 points at the end, about 3 standard errors of the difference
+on 11,286 questions. It is one seed and a short run, so the gap may shrink with full training, but
+nothing here favors mean pooling except an ECE that is equal within noise, and calibration is
+Phase 3's job. Peak VRAM was the same for both (12.40 GiB reserved).
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

@@ -1,0 +1,19 @@
+# Pooling choice (D2): two short runs identical except for pooling, compared on the full dev split.
+# 1500 steps of 32 questions (~22% of an epoch), the schedule decays to 0 over those steps.
+# Run with: uv run --extra gpu --extra tracking python -m trueodds.train configs/phase2-pool-mean.yaml
+run: phase2-pool-mean
+pooling: mean
+eval_sets: [dev]
+resample_templates: true
+lr: 3.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.06
+epochs: 3
+max_steps: 1500
+questions_per_step: 32
+max_tokens_per_microbatch: 16384
+grad_checkpointing: false
+tracking: mlflow  # D24; needs --extra tracking
+eval_every: 500
+log_every: 50
+seed: 0
