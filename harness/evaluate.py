@@ -170,6 +170,22 @@ def write(result: dict, results_dir: Path = paths.RESULTS) -> Path:
     return path
 
 
+def mirror_to_mlflow(result: dict, path: Path, checkpoint: Path) -> None:
+    """Copy the result into the checkpoint's MLflow run, when it has one (D24).
+
+    The JSON written above stays the record; MLflow only shows it next to the training curves.
+    """
+    if not (checkpoint.parent / "mlflow.json").exists():
+        return
+    try:
+        from trueodds.tracking import log_eval
+
+        log_eval(result, path, checkpoint)
+        print("mirrored to the checkpoint's MLflow run")
+    except RuntimeError as e:  # the tracking extra is not installed
+        print(f"not mirrored to MLflow: {e}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     which = parser.add_mutually_exclusive_group(required=True)
@@ -184,7 +200,9 @@ def main() -> None:
 
         ckpt = args.checkpoint.expanduser().resolve()
         predictor = ModelPredictor.load(ckpt)
-        path = write(evaluate(predictor, args.data_dir, run=ckpt.parent.name, checkpoint=ckpt.name))
+        result = evaluate(predictor, args.data_dir, run=ckpt.parent.name, checkpoint=ckpt.name)
+        path = write(result)
+        mirror_to_mlflow(result, path, ckpt)
     print(f"wrote {path}")
 
 

@@ -11,3 +11,5 @@ RAW = DATA / "raw"  # the Hugging Face download cache
 RUNS = HOME / "runs"
 REPO = Path(__file__).resolve().parents[2]
 RESULTS = REPO / "harness" / "results"
+MLFLOW_DB = HOME / "mlflow.db"  # MLflow runs and the model registry (D24)
+MLARTIFACTS = HOME / "mlartifacts"  # MLflow artifacts, registered model versions included

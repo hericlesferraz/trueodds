@@ -3,6 +3,7 @@
     uv run --extra gpu python -m trueodds.train configs/phase1-overfit.yaml
     uv run --extra gpu python -m trueodds.train configs/phase2-base.yaml --max-steps 50 \
         --longest-first --no-eval                           # the VRAM probe
+    uv run --extra gpu --extra tracking python -m trueodds.train <config> --mlflow   # tracked (D24)
 
 fp32 weights under bf16 autocast, fused AdamW, linear warmup then linear decay. Every `eval_every`
 steps the eval sets are scored with the harness metrics; the best checkpoint by dev accuracy is
@@ -64,6 +65,7 @@ class TrainConfig:
     eval_every: int = 500
     log_every: int = 10
     save: bool = True
+    tracking: str = "none"  # "mlflow": log the run and register the best checkpoint (D24)
     longest_first: bool = False
     seed: int = 0
 
@@ -72,6 +74,8 @@ class TrainConfig:
         if bad:
             # Test and held-out files are never read for any choice (D6).
             raise ValueError(f"eval_sets may only be {EVAL_SETS}; got {bad}")
+        if self.tracking not in ("none", "mlflow"):
+            raise ValueError(f"tracking must be 'none' or 'mlflow', not {self.tracking!r}")
         unknown = [s for s in self.sources if s not in TRAIN_SOURCES]
         if unknown:
             raise ValueError(f"not training sources: {unknown}")
@@ -139,9 +143,10 @@ def evaluate_sets(
 
 
 class Logger:
-    """Prints, and writes to TensorBoard when it is installed (the gpu extra)."""
+    """Writes to TensorBoard when it is installed (the gpu extra), and to a tracker if given."""
 
-    def __init__(self, log_dir: Path | None) -> None:
+    def __init__(self, log_dir: Path | None, tracker=None) -> None:
+        self.tracker = tracker  # anything with `metrics(step, values)`, e.g. MlflowTracker
         self.writer = None
         if log_dir is not None:
             try:
@@ -152,6 +157,8 @@ class Logger:
                 print("tensorboard is not installed; logging to stdout only")
 
     def scalars(self, step: int, values: dict[str, float]) -> None:
+        if self.tracker:
+            self.tracker.metrics(step, values)
         if self.writer:
             for k, v in values.items():
                 self.writer.add_scalar(k, v, step)
@@ -168,6 +175,7 @@ def fit(
     eval_sets: dict[str, list[Example]],
     cfg: TrainConfig,
     run_dir: Path | None = None,
+    tracker=None,
 ) -> dict:
     """Train `model` in place on `train`; return the summary (also written to `run_dir`)."""
     device = next(model.parameters()).device
@@ -176,7 +184,7 @@ def fit(
     torch.manual_seed(cfg.seed)
     if cfg.grad_checkpointing:
         model.encoder.gradient_checkpointing_enable()
-    logger = Logger(run_dir / "tb" if run_dir else None)
+    logger = Logger(run_dir / "tb" if run_dir else None, tracker)
 
     lengths = encoder.lengths(train)
     ks = [ex.k for ex in train]
@@ -290,6 +298,7 @@ def main() -> None:
     parser.add_argument("--longest-first", action="store_true", help="costliest steps first")
     parser.add_argument("--no-eval", action="store_true", help="no evaluation, no checkpoints")
     parser.add_argument("--run", help="override the run name")
+    parser.add_argument("--mlflow", action="store_true", help="track the run in MLflow (D24)")
     parser.add_argument("--data-dir", type=Path, default=paths.DATA)
     args = parser.parse_args()
 
@@ -303,6 +312,8 @@ def main() -> None:
         overrides.update(eval_sets=[], save=False)
     if args.run:
         overrides["run"] = args.run
+    if args.mlflow:
+        overrides["tracking"] = "mlflow"
     cfg = replace(cfg, **overrides)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -318,7 +329,30 @@ def main() -> None:
         limit = cfg.train_limit if name == "train" else cfg.eval_limit
         eval_sets[name] = load_split(cfg, name, limit, args.data_dir)
     model = DecisionModel.from_pretrained(cfg.backbone, cfg.pooling, cfg.attn).to(device)
-    summary = fit(model, encoder, train, eval_sets, cfg, run_dir)
+
+    tracker = None
+    (run_dir / "mlflow.json").unlink(
+        missing_ok=True
+    )  # a re-used run dir must not point at an old run
+    if cfg.tracking == "mlflow":
+        from trueodds import tracking
+
+        tracker = tracking.MlflowTracker()
+        tracker.start(cfg.run, dataclasses.asdict(cfg), run_dir)
+    status = "FAILED"
+    try:
+        summary = fit(model, encoder, train, eval_sets, cfg, run_dir, tracker)
+        if tracker:
+            tracker.artifact(run_dir / "config.yaml")
+            tracker.artifact(run_dir / "summary.json")
+            best = run_dir / "best"
+            if best.exists():  # only best is registered, never last (D24)
+                version = tracking.register(best, tracker.run_id, tracking.checkpoint_tags(best))
+                print(f"registered {tracking.MODEL_NAME} version {version}")
+        status = "FINISHED"
+    finally:
+        if tracker:
+            tracker.end(status)
     print(json.dumps({k: summary.get(k) for k in ("final", "peak_vram_gib")}, indent=2))
     print(f"run dir: {run_dir}")
 

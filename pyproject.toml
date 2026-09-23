@@ -19,6 +19,8 @@ dependencies = [
 # training and GPU commands as `uv run --extra gpu ...`.
 [project.optional-dependencies]
 gpu = ["nvidia-ml-py>=12.0", "tensorboard>=2.17"]
+# Run tracking and the model registry (D24), local only: `uv run --extra tracking ...`.
+tracking = ["mlflow>=3.16"]
 
 [dependency-groups]
 dev = ["pytest>=8.2", "ruff>=0.6"]

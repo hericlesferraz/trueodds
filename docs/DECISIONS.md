@@ -362,6 +362,34 @@ questions it memorizes are the ones it is scored on.
 
 ---
 
+## D24 — MLflow tracks the runs and registers the best checkpoints; the harness stays the record
+*2026-09-23*
+
+**Decision:** MLflow 3.16 (the optional `tracking` extra), local only: runs and the model registry
+in `~/.trueodds/mlflow.db` (sqlite), artifacts in `~/.trueodds/mlartifacts/`, one experiment and one
+registered model, both named `trueodds`. A run with `tracking: mlflow` (or `--mlflow`) logs:
+- its config as params, and every scalar the trainer logs (train loss, lr, grad norm, throughput,
+  VRAM, the eval metrics) at its step;
+- `config.yaml` and `summary.json` as artifacts;
+- its `best` checkpoint (never `last`) as a new version of the `trueodds` model: a pyfunc model
+  whose input is rows of `state`, `question`, `options` and whose output is one probability list per
+  row, tagged with its run, pooling and dev accuracy, NLL and ECE.
+
+`harness.evaluate --checkpoint` mirrors its result into the checkpoint's run (the JSON as an
+artifact, per file accuracy, NLL and ECE under `harness/`). No code sets an alias: a version is
+promoted to `champion` by hand, in the UI or with `python -m trueodds.tracking promote`, and on dev
+numbers only (D6), which is why only dev numbers are version tags.
+
+**Why:** to learn the tool, and because Phase 2 and Phase 5 compare many runs, which the UI makes
+easier than a directory of `summary.json` files. The harness JSONs in `harness/results/` remain the
+record the exit criteria are read from; MLflow shows them next to the training curves and does not
+replace them. Phase 4's `predict()` can load `models:/trueodds@champion`. Each version stores its own
+copy of the weights (573 MB), so only `best` is registered. Langfuse was considered and not taken: it
+traces calls to generative models, and this model generates nothing; it may fit the Phase 5
+experiment where a local LLM labels data.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

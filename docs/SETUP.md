@@ -158,6 +158,35 @@ file, 33,282 questions and 202,781 sequences plus the template and mismatched fi
 for the overfit checkpoint. Checked end to end; its numbers are near chance, as expected, and were
 not kept.
 
+## MLflow (D24)
+
+```bash
+uv sync --extra gpu --extra tracking      # mlflow 3.16.1 resolved on 2026-09-23
+uv run --extra gpu --extra tracking python -m trueodds.train configs/<run>.yaml --mlflow
+uv run --extra tracking python -m trueodds.tracking register ~/.trueodds/runs/<run>/best
+uv run --extra tracking python -m trueodds.tracking promote <version>          # alias champion
+uv run --extra tracking mlflow ui --backend-store-uri sqlite:///$HOME/.trueodds/mlflow.db
+```
+
+The UI is then at http://127.0.0.1:5000: runs under the `trueodds` experiment, versions under
+Models → `trueodds`, where an alias such as `champion` is set on a version. A version loads with
+`mlflow.pyfunc.load_model("models:/trueodds@champion")` (or `models:/trueodds/<n>`) after
+`mlflow.set_tracking_uri("sqlite:///" + str(Path.home() / ".trueodds/mlflow.db"))`, and its
+`predict` takes a DataFrame of `state`, `question`, `options`.
+
+Checked on 2026-09-23: `phase1-overfit/best` registered as version 1, loaded back through the
+registry and asked a BoolQ dev question; a 20-step tracked run (`phase2-mlflow-smoke`) logged its
+curves and registered version 2 by itself. A version is 573 MB of artifacts, the weights once.
+
+- `mlflow.pyfunc.log_model` calls `load_context` on the wrapper to infer the signature from the
+  input example, then pickles the same object. Without `TrueOddsModel.__getstate__` dropping the
+  loaded predictor, the pickle held a second copy of the weights (1.2 GB per version).
+  `tests/test_tracking.py` checks the pickle stays small.
+- MLflow warns that `predict` has no type hints; the signature is inferred from the input example
+  instead (`state` and `question` strings, `options` an array of strings).
+- The unit tests of the tracking extra run with `uv run --extra tracking pytest`; with a plain
+  `uv sync`, `tests/test_tracking.py` skips its MLflow test.
+
 ## Workarounds
 
 - **A micro-batch that passes a short probe can still run out of memory later.** With padded

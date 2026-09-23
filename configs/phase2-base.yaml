@@ -1,5 +1,6 @@
 # Phase 2 settings (PLAN.md): the full Phase 0 mix, 3 epochs, ~32 questions per optimizer step.
 # Phase 1 runs it only as a VRAM probe: --max-steps 50 --longest-first --no-eval.
+# Run with: uv run --extra gpu --extra tracking python -m trueodds.train configs/phase2-base.yaml
 run: phase2-base
 pooling: cls
 eval_sets: [dev]
@@ -11,6 +12,7 @@ epochs: 3
 questions_per_step: 32
 max_tokens_per_microbatch: 16384
 grad_checkpointing: false
+tracking: mlflow  # D24; needs --extra tracking
 eval_every: 1000
 log_every: 50
 seed: 0

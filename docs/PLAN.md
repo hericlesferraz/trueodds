@@ -124,6 +124,8 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
 ## Phase 2 — Full training
 
 **Tasks**
+- [x] Runs tracked in MLflow, the best checkpoint of each run registered as a version of the
+      `trueodds` model (D24). *`src/trueodds/tracking.py`; `configs/phase2-base.yaml` tracks.*
 - [ ] Full run on the Phase 0 mix: learning rate in 2e-5 to 5e-5, 6% warmup, 2–3 epochs, effective
       batch of ~32 questions. Settings in `configs/`.
 - [ ] Choose the pooling (CLS or mean) with two short runs compared on dev (D2).

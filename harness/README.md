@@ -32,6 +32,10 @@ A trained checkpoint is scored with `--checkpoint` (Phase 1 added it); the model
 uv run --extra gpu python -m harness.evaluate --checkpoint ~/.trueodds/runs/<run>/best
 ```
 
+If the checkpoint's run was tracked in MLflow (D24), the result is also mirrored into that run: the
+JSON as an artifact, and per file accuracy, NLL and ECE as `harness/...` metrics. The JSON in
+`harness/results/` stays the record.
+
 ### Latency (`harness/latency`, Phase 4)
 
 p50 and p95 per request by number of options and state length, and the time for many questions

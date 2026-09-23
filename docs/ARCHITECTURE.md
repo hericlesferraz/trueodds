@@ -106,6 +106,8 @@ as five yes/no questions, so the micro-batch is sized in padded tokens, not ques
 | `trueodds/batching.py` | steps, token-budget micro-batches, collation (D22) |
 | `trueodds/train.py` | the training loop, one YAML config per run |
 | `trueodds/predict.py` | `ModelPredictor`, the harness `Predictor` for a checkpoint |
+| `trueodds/tracking.py` | MLflow runs, registering and promoting versions, mirroring harness results (D24) |
+| `trueodds/mlflow_model.py` | the checkpoint as an MLflow pyfunc model (rows of state, question, options → probabilities) |
 
 A checkpoint directory (`~/.trueodds/runs/<run>/best/` and `last/`) holds `model.safetensors`, the
 encoder's `config.json`, `model.json` (backbone, pooling, max length) and the tokenizer, so it loads
@@ -121,3 +123,4 @@ in `tb/`.
 | Run settings | `configs/*.yaml` | yes |
 | Downloaded and processed data | `~/.trueodds/data/` | no (D12) |
 | Checkpoints and TensorBoard logs | `~/.trueodds/runs/` | no (D12) |
+| MLflow runs and model registry, and its artifacts | `~/.trueodds/mlflow.db`, `~/.trueodds/mlartifacts/` | no (D12, D24) |

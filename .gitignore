@@ -41,3 +41,8 @@ harness/results/_scratch/
 .idea/
 .vscode/
 *.swp
+
+# MLflow (D24): its store lives in ~/.trueodds/; these guard against a stray local one
+mlruns/
+mlartifacts/
+mlflow.db
