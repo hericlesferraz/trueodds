@@ -65,4 +65,11 @@ tests/                  # unit tests; no GPU required
 
 ## Commands
 
-Written in Phase 0, once they exist.
+```bash
+uv sync                                   # base package and dev tools; no GPU needed
+uv run pytest                             # unit tests (GPU tests deselected)
+uv run ruff check . && uv run ruff format --check .
+uv run --extra gpu <cmd>                  # anything that needs torch; a plain `uv run` removes it
+```
+
+More are added as they are written; see `docs/SETUP.md`.

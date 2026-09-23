@@ -1,0 +1,71 @@
+[project]
+name = "trueodds"
+version = "0.0.1"
+description = "A small decision model that returns a probability per option, and measures whether those probabilities are true."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Hericles Ferraz" }]
+dependencies = [
+    "datasets>=3.0",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tokenizers>=0.20",
+    "transformers>=4.48",  # 4.48 is the first release with ModernBERT
+]
+
+# GPU components are optional so that `uv sync` and `uv run pytest` work on a machine without a
+# GPU. Install them with `uv sync --extra gpu`, and run GPU commands as `uv run --extra gpu ...`.
+[project.optional-dependencies]
+gpu = ["torch>=2.8", "nvidia-ml-py>=12.0"]
+
+[dependency-groups]
+dev = ["pytest>=8.2", "ruff>=0.6"]
+
+# Blackwell (RTX 50 series) needs CUDA 12.8+ wheels (D11).
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# harness is installed too, so scripts/ can import it from any working directory.
+packages = ["src/trueodds", "harness"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = [".", "src"]  # `harness` (at the root) and `trueodds` (in src) are both first-party
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle / pyflakes
+    "I",             # isort
+    "B",             # bugbear
+    "UP",            # pyupgrade
+    "SIM",           # simplify
+    "RUF",           # ruff-specific
+    "TID",           # tidy imports
+]
+ignore = ["E501"]  # long strings; ruff format handles code width
+
+[tool.ruff.lint.isort]
+known-first-party = ["trueodds", "harness"]
+
+[tool.ruff.format]
+exclude = ["*.md"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers --strict-config -m 'not gpu'"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "gpu: needs a GPU and the gpu extra; deselected by default, run with `-m gpu`",
+]
