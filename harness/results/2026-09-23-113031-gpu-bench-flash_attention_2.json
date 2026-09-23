@@ -1,0 +1,89 @@
+{
+  "kind": "gpu-bench",
+  "created": "2026-09-23T11:23:52",
+  "model": "answerdotai/ModernBERT-base",
+  "attn_implementation": "flash_attention_2",
+  "varlen": false,
+  "budget_gib": 15.0,
+  "env": {
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "capability": [
+      12,
+      0
+    ],
+    "total_gib": 15.4544677734375,
+    "torch": "2.8.0+cu128",
+    "cuda": "12.8",
+    "python": "3.12.3"
+  },
+  "forward_bf16": {
+    "batch": 16,
+    "length": 512,
+    "dtype": "torch.bfloat16",
+    "finite": true,
+    "peak_allocated_gib": 0.6466183662414551
+  },
+  "training": [
+    {
+      "length": 128,
+      "checkpointing": false,
+      "max_batch": 152,
+      "sec_per_step": 0.7402190748000066,
+      "seqs_per_sec": 205.34461374298894,
+      "tokens_per_sec": 26284.110559102584,
+      "peak_allocated_gib": 13.272218227386475,
+      "peak_reserved_gib": 13.828125
+    },
+    {
+      "length": 256,
+      "checkpointing": false,
+      "max_batch": 76,
+      "sec_per_step": 0.7446611430999838,
+      "seqs_per_sec": 102.05984386887188,
+      "tokens_per_sec": 26127.3200304312,
+      "peak_allocated_gib": 13.272339820861816,
+      "peak_reserved_gib": 13.828125
+    },
+    {
+      "length": 512,
+      "checkpointing": false,
+      "max_batch": 36,
+      "sec_per_step": 0.7133821467001326,
+      "seqs_per_sec": 50.46383648164448,
+      "tokens_per_sec": 25837.484278601973,
+      "peak_allocated_gib": 12.641457557678223,
+      "peak_reserved_gib": 13.26171875
+    },
+    {
+      "length": 128,
+      "checkpointing": true,
+      "max_batch": 824,
+      "sec_per_step": 5.257899305200044,
+      "seqs_per_sec": 156.7165805524398,
+      "tokens_per_sec": 20059.722310712295,
+      "peak_allocated_gib": 12.044642448425293,
+      "peak_reserved_gib": 12.9140625
+    },
+    {
+      "length": 256,
+      "checkpointing": true,
+      "max_batch": 408,
+      "sec_per_step": 5.108607372199913,
+      "seqs_per_sec": 79.86520988484256,
+      "tokens_per_sec": 20445.493730519695,
+      "peak_allocated_gib": 11.919952869415283,
+      "peak_reserved_gib": 12.779296875
+    },
+    {
+      "length": 512,
+      "checkpointing": true,
+      "max_batch": 200,
+      "sec_per_step": 5.0850088068998955,
+      "seqs_per_sec": 39.33129864566176,
+      "tokens_per_sec": 20137.62490657882,
+      "peak_allocated_gib": 11.718459129333496,
+      "peak_reserved_gib": 12.564453125
+    }
+  ],
+  "nvml_used_gib_at_end": 13.7109375
+}

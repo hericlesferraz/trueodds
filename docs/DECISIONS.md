@@ -263,6 +263,55 @@ are the calibration numbers a trained model must beat.
 
 ---
 
+## D19 — Attention backend: PyTorch SDPA with torch 2.11
+*2026-09-23, closes the question left open by D11*
+
+**Decision:** train and run with `attn_implementation="sdpa"` on the torch that `uv sync --extra
+gpu` resolves (2.11.0+cu128). flash-attn is not a dependency.
+
+**Why:** measured in `docs/SETUP.md`. The official flash-attn 2.8.3 wheel runs on compute capability
+12.0, but only with torch 2.8. Next to SDPA it gives the same throughput at fixed length and at
+most ~8% more with padded batches. In transformers 5.17 neither backend skips the compute on
+padding, so grouping batches by length (D10) matters far more than the backend.
+
+---
+
+## D20 — Phase 2 targets, from the Phase 0 baselines
+*2026-09-23, replaces the (initial) targets of Phase 2*
+
+**Decision:** from `harness/results/2026-09-23-112729-baselines.json`. Each file must be passed by
+the best checkpoint (chosen on dev):
+
+1. **Accuracy at least 10 points above the higher of the random and majority baselines**, on every
+   training source's `test` file and on both held-out datasets:
+
+   | File | Random | Majority | Target ≥ |
+   |---|---|---|---|
+   | boolq/test | 0.500 | 0.622 | 0.722 |
+   | mnli/test | 0.333 | 0.318 | 0.433 |
+   | arc_easy/test | 0.250 | 0.246 | 0.350 |
+   | arc_challenge/test | 0.250 | 0.265 | 0.365 |
+   | hellaswag/test | 0.250 | 0.248 | 0.350 |
+   | mmlu_aux/test | 0.250 | 0.272 | 0.372 |
+   | ag_news/test | 0.250 | 0.250 | 0.350 |
+   | yahoo/test | 0.100 | 0.100 | 0.200 |
+   | commonsense_qa/test (held-out) | 0.201 | 0.210 | 0.310 |
+   | dbpedia/test (held-out) | 0.071 | 0.072 | 0.172 |
+
+2. **NLL below the prior baseline's (D18)** on every one of those files.
+3. **Held-out templates** (D8): on each templated source, accuracy on `test-heldout-template` within
+   3 points of `test`.
+
+**Why:** 10 points is more than three times the 95% interval of the smallest test file
+(ARC-Challenge, n = 1,172: about ±2.9 points), so passing it cannot be noise. It is a floor that
+says the model learned to read each task, not a target for good accuracy: a fine-tuned base encoder
+is expected to be far above it on AG News, Yahoo, MNLI and BoolQ, and the Phase 2 report states the
+actual margins. The NLL condition is the calibration side of the same floor. A model that has only
+learned how often each answer is right matches the prior; beating it means the probabilities use
+the text.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

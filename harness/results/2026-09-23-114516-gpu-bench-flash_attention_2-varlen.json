@@ -1,0 +1,62 @@
+{
+  "kind": "gpu-bench",
+  "created": "2026-09-23T11:44:16",
+  "model": "answerdotai/ModernBERT-base",
+  "attn_implementation": "flash_attention_2",
+  "varlen": true,
+  "budget_gib": 15.0,
+  "env": {
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "capability": [
+      12,
+      0
+    ],
+    "total_gib": 15.4544677734375,
+    "torch": "2.8.0+cu128",
+    "cuda": "12.8",
+    "python": "3.12.3"
+  },
+  "forward_bf16": {
+    "batch": 16,
+    "length": 512,
+    "dtype": "torch.bfloat16",
+    "finite": true,
+    "peak_allocated_gib": 0.6466183662414551
+  },
+  "training": [
+    {
+      "length": 128,
+      "checkpointing": false,
+      "probed_batch": 180,
+      "max_batch": 180,
+      "sec_per_step": 0.8962673235000693,
+      "seqs_per_sec": 200.83293820985327,
+      "tokens_per_sec": 25706.61609086122,
+      "peak_allocated_gib": 13.360880374908447,
+      "peak_reserved_gib": 14.689453125
+    },
+    {
+      "length": 256,
+      "checkpointing": false,
+      "probed_batch": 92,
+      "max_batch": 88,
+      "sec_per_step": 0.8767125288999523,
+      "seqs_per_sec": 100.37497708675073,
+      "tokens_per_sec": 25695.994134208187,
+      "peak_allocated_gib": 12.991568565368652,
+      "peak_reserved_gib": 14.296875
+    },
+    {
+      "length": 512,
+      "checkpointing": false,
+      "probed_batch": 44,
+      "max_batch": 44,
+      "sec_per_step": 0.8801049867999609,
+      "seqs_per_sec": 49.99403555248888,
+      "tokens_per_sec": 25596.946202874307,
+      "peak_allocated_gib": 12.959991455078125,
+      "peak_reserved_gib": 14.296875
+    }
+  ],
+  "nvml_used_gib_at_end": 15.32733154296875
+}

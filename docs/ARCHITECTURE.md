@@ -1,7 +1,7 @@
 # Architecture
 
-Nothing is built yet. This is the design the plan starts from; each part is confirmed or changed by
-a measurement in the phase that builds it.
+Phase 0 has built the data and the harness; the model is Phase 1. This is the design the plan
+starts from; each part is confirmed or changed by a measurement in the phase that builds it.
 
 ## Data flow
 
@@ -67,16 +67,19 @@ exceed the budget, the example is dropped at conversion and counted.
 
 ## Memory and throughput
 
-Estimates, to be replaced by Phase 0 measurements:
+Measured in Phase 0 (`docs/SETUP.md`), with fp32 weights, bf16 autocast, fused AdamW and PyTorch
+SDPA attention (D19):
 
-| Item | Estimate |
+| Item | Measured |
 |---|---|
-| ModernBERT-base parameters | ~150M, ~0.3 GB in bf16 |
-| AdamW state and fp32 master weights | ~2.4 GB |
-| Activations | the rest; set by the micro-batch in sequences, not questions |
+| ModernBERT-base parameters | ~150M; a bf16 forward pass of 16 × 512 tokens peaks at 0.65 GiB |
+| Largest training micro-batch under 15 GiB | 36 sequences at 512 tokens, 76 at 256, 152 at 128 (no gradient checkpointing) |
+| Training throughput | ~25k tokens/s at any length; gradient checkpointing costs ~22% |
+| One epoch of the Phase 2 mix | 154.6M tokens, ~100 min if batches are grouped by length |
 
-One question with 10 options (Yahoo) costs as much as five yes/no questions. The micro-batch is
-therefore sized in sequences, and batches group questions of similar K to reduce padding (D10).
+Throughput is constant in tokens, and neither attention backend skips the compute on padding here,
+so batches are grouped by length as well as by K. One question with 10 options (Yahoo) costs as much
+as five yes/no questions, so the micro-batch is sized in sequences, not questions (D10).
 
 ## Where things live
 

@@ -6,7 +6,7 @@ once Phase 0 produces the baselines.
 
 | Phase | Goal | Exit when |
 |---|---|---|
-| 0 | Environment, data and harness, no training | ModernBERT runs in bf16 on this GPU; every dataset is converted with counts per split; the harness scores accuracy, ECE, NLL and Brier and reports the baselines on test and held-out; throughput is measured |
+| 0 ✓ | Environment, data and harness, no training | ModernBERT runs in bf16 on this GPU; every dataset is converted with counts per split; the harness scores accuracy, ECE, NLL and Brier and reports the baselines on test and held-out; throughput is measured |
 | 1 | Model and training loop, proved on a tiny set | The model overfits 200 examples; option masking, truncation and permutation are proved by tests |
 | 2 | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
 | 3 | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
@@ -28,56 +28,57 @@ with known answers.
 Known state on 2026-09-23: RTX 5060 Ti 16 GB (Blackwell, compute capability 12.0), uv, Python 3.12
 through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
 
-- [ ] Package skeleton with uv: `pyproject.toml`, `src/trueodds/`, `tests/`, ruff, pytest. GPU
+- [x] Package skeleton with uv: `pyproject.toml`, `src/trueodds/`, `tests/`, ruff, pytest. GPU
       dependencies (torch, flash-attn if it builds) in an optional `gpu` extra so the unit tests
       run without a GPU.
-- [ ] Load `answerdotai/ModernBERT-base` on the GPU and run a bf16 forward pass on a batch of
+- [x] Load `answerdotai/ModernBERT-base` on the GPU and run a bf16 forward pass on a batch of
       512-token sequences.
-- [ ] Find out whether flash-attn builds for Blackwell. ModernBERT uses it to skip padding; without
+- [x] Find out whether flash-attn builds for Blackwell. ModernBERT uses it to skip padding; without
       it, PyTorch SDPA is the fallback. Record which one runs, and the throughput of each that
       works, in `docs/SETUP.md` (D11).
-- [ ] Measure training throughput (sequences per second, forward and backward, bf16) at 128, 256
+- [x] Measure training throughput (sequences per second, forward and backward, bf16) at 128, 256
       and 512 tokens, with and without gradient checkpointing, and the largest micro-batch that
       fits under 15 GB. From it, estimate the time of one epoch over the Phase 2 mix (D10).
-- [ ] Record any workaround in `docs/SETUP.md`.
+      *Done: ~25k tokens/s with SDPA, ~100 min per epoch (SETUP.md); SDPA kept, D19.*
+- [x] Record any workaround in `docs/SETUP.md`.
 
 ### Data
 
-- [ ] Write `specs/001-example-format.md`: the unified schema
+- [x] Write `specs/001-example-format.md`: the unified schema
       `{id, source, split, state, question, options[], label_idx, template_id}`, the split rule
       (D6), the question templates and the held-out template per task (D8), and the dedup rule
       (D5).
-- [ ] One converter per dataset, in `src/trueodds/data/`, each with a unit test on a few hand-made
-      rows: BoolQ, MNLI, ARC-Easy and ARC-Challenge, HellaSwag, MMLU auxiliary train, AG News,
-      Yahoo Answers Topics, CommonsenseQA, DBpedia-14.
-- [ ] 3–5 question paraphrases per task, sampled at random in training, plus one paraphrase per
+- [x] One converter per dataset, in `src/trueodds/data/`, each with a unit test on a few hand-made
+      rows: BoolQ, MNLI, ARC-Easy and ARC-Challenge, HellaSwag (ActivityNet rows only, D17), MMLU
+      auxiliary train, AG News, Yahoo Answers Topics, CommonsenseQA, DBpedia-14.
+- [x] 3–5 question paraphrases per task, sampled at random in training, plus one paraphrase per
       task that is never trained on (D8).
-- [ ] Cap each training dataset (initially ~50k training examples) so the large ones do not
+- [x] Cap each training dataset (initially ~50k training examples) so the large ones do not
       dominate (D4).
-- [ ] Remove duplicates across datasets by normalized question and options text. In particular,
+- [x] Remove duplicates across datasets by normalized question and options text. In particular,
       MMLU auxiliary train contains ARC among its sources; nothing in the training data may also be
       in any test split or held-out dataset (D5).
-- [ ] `scripts/prepare_data.py` downloads, converts and writes everything to `~/.trueodds/data/`,
+- [x] `scripts/prepare_data.py` downloads, converts and writes everything to `~/.trueodds/data/`,
       and prints counts per source and split, option-count distribution and label distribution.
-- [ ] Check each dataset's license at its source and list them in `docs/LICENSES.md`.
+- [x] Check each dataset's license at its source and list them in `docs/LICENSES.md`.
 
 ### Harness
 
-- [ ] Write `specs/002-run-report.md`: the results JSON (run, checkpoint, per source and split:
+- [x] Write `specs/002-run-report.md`: the results JSON (run, checkpoint, per source and split:
       n, accuracy, ECE, NLL, Brier, and the baselines), and the exact metric definitions (D7).
-- [ ] `harness/metrics.py`: accuracy, ECE (15 equal-width bins on the top-1 probability), NLL,
+- [x] `harness/metrics.py`: accuracy, ECE (15 equal-width bins on the top-1 probability), NLL,
       Brier, and the data for a reliability diagram. Proved on fakes: a model whose probabilities
       are sampled correctly has ECE near 0; a model that is always 100% sure and right half the
       time has ECE 0.5.
-- [ ] Baselines per source: random (mean of 1/K) and majority class (the most frequent label index
+- [x] Baselines per source: random (mean of 1/K) and majority class (the most frequent label index
       or label text in that source's training split; for held-out, in its own test split, since it
       has no training split — stated as such in the report).
-- [ ] `harness/evaluate.py` takes anything that returns a probability per option and writes the
+- [x] `harness/evaluate.py` takes anything that returns a probability per option and writes the
       results JSON; `harness/report.py` turns a set of JSONs into a comparison table.
-- [ ] Baseline run, before any model: the results JSON with only the baselines filled in, on every
+- [x] Baseline run, before any model: the results JSON with only the baselines filled in, on every
       test split and both held-out datasets.
 
-**Exit criteria**
+**Exit criteria** — met on 2026-09-23
 - A bf16 forward pass of ModernBERT-base runs on the GPU; attention backend, throughput and peak
   VRAM are in `docs/SETUP.md`.
 - `~/.trueodds/data/` holds every dataset in the spec 001 format; the counts are recorded; the
@@ -124,11 +125,10 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
 - [ ] Accuracy on the held-out question templates, next to the trained templates (D8).
 - [ ] Save the run's report next to the baseline in `harness/results/`.
 
-**Exit criteria** *(initial; revised from the Phase 0 baselines)*
-- On every training dataset's test split: accuracy clearly above the majority baseline (the exact
-  margin per dataset is set in Phase 0).
-- On CommonsenseQA and DBpedia-14, never trained on: accuracy at least 10 points above the higher
-  of the random and majority baselines.
+**Exit criteria** *(set from the Phase 0 baselines in D20)*
+- On every training dataset's test split and on CommonsenseQA and DBpedia-14 (never trained on):
+  accuracy at least 10 points above the higher of the random and majority baselines (the numbers
+  are in D20), and NLL below the prior baseline's (D18).
 - On the held-out templates: accuracy within 3 points of the trained templates. A larger gap means
   the model reads a phrasing, not the question.
 

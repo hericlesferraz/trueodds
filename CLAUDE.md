@@ -12,8 +12,9 @@ and calibration, meaning outcomes it gives 0.8 should happen about 80% of the ti
 
 Runs entirely on consumer hardware: RTX 5060 Ti 16 GB, 32 GB RAM, Ubuntu.
 
-**Status: planning.** The plan, architecture and decisions D1–D13 are written. Nothing is built
-yet. Phase 0 starts from `docs/PLAN.md`.
+**Status: Phase 0 done (2026-09-23).** The data (spec 001), the harness with its baselines
+(spec 002) and the GPU measurements (`docs/SETUP.md`) exist; decisions run to D20. Phase 1 (model
+and training loop) is next.
 
 ## Project map
 
@@ -24,7 +25,8 @@ docs/
   PLAN.md               # phases, tasks and measurable exit criteria (the source of truth for progress)
   ARCHITECTURE.md       # model, data flow, input format, memory budget
   DECISIONS.md          # what was decided and why, plus open questions
-  SETUP.md              # verified install steps and workarounds (written in Phase 0)
+  SETUP.md              # verified install steps, measurements and workarounds
+  LICENSES.md           # dataset and model licenses
 specs/                  # contracts for non-obvious interfaces, written when a phase starts
 harness/                # evaluations: accuracy, zero-shot, calibration, latency; results/ holds the JSONs
 configs/                # one YAML per training run (Phase 1)
@@ -69,7 +71,12 @@ tests/                  # unit tests; no GPU required
 uv sync                                   # base package and dev tools; no GPU needed
 uv run pytest                             # unit tests (GPU tests deselected)
 uv run ruff check . && uv run ruff format --check .
-uv run --extra gpu <cmd>                  # anything that needs torch; a plain `uv run` removes it
+uv run --extra gpu <cmd>                  # anything that needs torch; a plain `uv sync` removes it
+
+uv run python scripts/prepare_data.py     # download and convert every dataset to ~/.trueodds/data
+uv run python -m harness.evaluate --baselines
+uv run python -m harness.report harness/results/*-baselines.json
+uv run --extra gpu python scripts/gpu_bench.py
 ```
 
-More are added as they are written; see `docs/SETUP.md`.
+Details and measured results are in `docs/SETUP.md`.
