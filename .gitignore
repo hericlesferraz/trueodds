@@ -16,8 +16,8 @@ build/
 .env.*
 
 # Data and runs — never committed (D12); they live in ~/.trueodds/
-data/
-runs/
+/data/
+/runs/
 .trueodds/
 *.parquet
 *.arrow

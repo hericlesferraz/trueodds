@@ -192,6 +192,77 @@ is first a working reference, so the experiment has something to be compared wit
 
 ---
 
+## D14 — Which official split becomes test, per source
+*2026-09-23, refines D6*
+
+**Decision:** D6's "test = the official validation split" holds where the official test labels are
+hidden (BoolQ, MNLI, HellaSwag, CommonsenseQA). Elsewhere:
+- **ARC** publishes test labels, so test = the official test (2,376 Easy, 1,172 Challenge) and dev
+  = the official validation.
+- **AG News, Yahoo and DBpedia-14** have no validation split: test = the official test, dev carved
+  from train.
+- **MMLU auxiliary train** is one split. Dev and test (2,000 each) are carved from it **by
+  passage**: all the questions on one RACE passage go to the same split.
+
+**Why:** a labelled official test is larger and is what other results report, so it is the better
+test. Carving MMLU aux by passage matters because RACE asks several questions per passage; a random
+carve would put a passage in training and another question on it in test.
+
+---
+
+## D15 — Evaluation files are capped at 5,000 questions per source
+*2026-09-23*
+
+**Decision:** each test and held-out file is sampled down to 5,000 questions, stratified by label,
+seed 0, once, in `prepare_data`. Every run is scored on the same files.
+
+**Why:** DBpedia test (70k × 14 options) and Yahoo test (60k × 10) would cost about 1.6M sequences
+per evaluation, much more than all the other sources together. At n = 5,000 the 95% interval of an
+accuracy near 0.8 is about ±1.1 points, finer than any difference the exit criteria rest on.
+
+---
+
+## D16 — The dedup key includes the state and the template variables
+*2026-09-23, refines D5*
+
+**Decision:** two examples are duplicates when their normalized state, their normalized template
+variables (or the question, for datasets that bring their own), and their sorted normalized options
+are equal (spec 001).
+
+**Why:** D5's key (question plus options) would make every AG News example a duplicate of every
+other: they share the question "What is this text about?" and the same four labels. The rendered
+question is left out of the key because it is only a template; two renderings of the same MNLI pair
+are the same example.
+
+---
+
+## D17 — HellaSwag: ActivityNet rows only
+*2026-09-23*
+
+**Decision:** the HellaSwag converter drops every row whose `source_id` starts with `wikihow`. What
+is left is the ActivityNet part: 14,740 training rows (before the dev carve) and 3,243 test rows.
+
+**Why:** on 2026-09-14 GitHub blocked the HellaSwag repository after a DMCA notice from wikiHow,
+which claims copyright on its articles. About two thirds of HellaSwag's contexts are wikiHow text.
+The ActivityNet rows keep a "what happens next" task in the mix without that content.
+
+---
+
+## D18 — A third baseline: the label prior
+*2026-09-23, adds to D7*
+
+**Decision:** besides random and majority, every result reports a **prior** predictor. It gives each
+option the frequency of that label in the source's training split (by label text when all
+questions share the options, else by position), smoothed and renormalized over the question's
+options.
+
+**Why:** majority has no calibration to compare with (all its probability is on one option), and
+random's NLL is only log K. The prior is the best a model can do without reading the text. Its ECE is
+near 0 on a balanced set, which shows why ECE alone is not the target (D7), and its NLL and Brier
+are the calibration numbers a trained model must beat.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

@@ -1,0 +1,2064 @@
+{
+  "kind": "baselines",
+  "created": "2026-09-23T11:27:29",
+  "run": null,
+  "checkpoint": null,
+  "predictor": null,
+  "data_stats_created": "2026-09-23T11:27:14",
+  "results": {
+    "boolq/test": {
+      "source": "boolq",
+      "split": "test",
+      "role": "train",
+      "n": 3270,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 3270,
+          "accuracy": 0.5,
+          "ece": null,
+          "nll": 0.6931471805599453,
+          "brier": 0.5,
+          "by_k": {
+            "2": {
+              "n": 3270,
+              "accuracy": 0.5,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "boolq:0": {
+              "n": 826,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "boolq:1": {
+              "n": 795,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "boolq:2": {
+              "n": 819,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "boolq:3": {
+              "n": 830,
+              "accuracy": 0.5,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 3270,
+          "accuracy": 0.6217125382262997,
+          "ece": 0.3782874617737003,
+          "nll": 10.452468844160126,
+          "brier": 0.7565749235474006,
+          "by_k": {
+            "2": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.3782874617737003
+            }
+          },
+          "by_template": {
+            "boolq:0": {
+              "n": 826,
+              "accuracy": 0.6343825665859564,
+              "ece": 0.3656174334140436
+            },
+            "boolq:1": {
+              "n": 795,
+              "accuracy": 0.6188679245283019,
+              "ece": 0.38113207547169814
+            },
+            "boolq:2": {
+              "n": 819,
+              "accuracy": 0.6385836385836385,
+              "ece": 0.36141636141636146
+            },
+            "boolq:3": {
+              "n": 830,
+              "accuracy": 0.5951807228915663,
+              "ece": 0.4048192771084337
+            }
+          },
+          "fit_on": "train",
+          "label": "yes"
+        },
+        "prior": {
+          "n": 3270,
+          "accuracy": 0.6217125382262997,
+          "ece": 0.003007622018781131,
+          "nll": 0.6632388003098278,
+          "brier": 0.47039020765742934,
+          "by_k": {
+            "2": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.003007622018781131
+            }
+          },
+          "by_template": {
+            "boolq:0": {
+              "n": 826,
+              "accuracy": 0.6343825665859564,
+              "ece": 0.009662406340875562
+            },
+            "boolq:1": {
+              "n": 795,
+              "accuracy": 0.6188679245283019,
+              "ece": 0.005852235716779064
+            },
+            "boolq:2": {
+              "n": 819,
+              "accuracy": 0.6385836385836385,
+              "ece": 0.013863478338557722
+            },
+            "boolq:3": {
+              "n": 830,
+              "accuracy": 0.5951807228915663,
+              "ece": 0.029539437353514497
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "boolq/test-heldout-template": {
+      "source": "boolq",
+      "split": "test-heldout-template",
+      "role": "train",
+      "n": 3270,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 3270,
+          "accuracy": 0.5,
+          "ece": null,
+          "nll": 0.6931471805599453,
+          "brier": 0.5,
+          "by_k": {
+            "2": {
+              "n": 3270,
+              "accuracy": 0.5,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "boolq:heldout": {
+              "n": 3270,
+              "accuracy": 0.5,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 3270,
+          "accuracy": 0.6217125382262997,
+          "ece": 0.3782874617737003,
+          "nll": 10.452468844160126,
+          "brier": 0.7565749235474006,
+          "by_k": {
+            "2": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.3782874617737003
+            }
+          },
+          "by_template": {
+            "boolq:heldout": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.3782874617737003
+            }
+          },
+          "fit_on": "train",
+          "label": "yes"
+        },
+        "prior": {
+          "n": 3270,
+          "accuracy": 0.6217125382262997,
+          "ece": 0.003007622018781131,
+          "nll": 0.6632388003098278,
+          "brier": 0.47039020765742934,
+          "by_k": {
+            "2": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.003007622018781131
+            }
+          },
+          "by_template": {
+            "boolq:heldout": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.003007622018781131
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "mnli/test": {
+      "source": "mnli",
+      "split": "test",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.33333333333333337,
+          "ece": null,
+          "nll": 1.0986122886681096,
+          "brier": 0.6666666666666268,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "mnli:0": {
+              "n": 1203,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "mnli:1": {
+              "n": 1280,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            },
+            "mnli:2": {
+              "n": 1275,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "mnli:3": {
+              "n": 1242,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.3182,
+          "ece": 0.6818,
+          "nll": 18.83883019684008,
+          "brier": 1.3636,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.6818
+            }
+          },
+          "by_template": {
+            "mnli:0": {
+              "n": 1203,
+              "accuracy": 0.2959268495428096,
+              "ece": 0.7040731504571904
+            },
+            "mnli:1": {
+              "n": 1280,
+              "accuracy": 0.3296875,
+              "ece": 0.6703125
+            },
+            "mnli:2": {
+              "n": 1275,
+              "accuracy": 0.3058823529411765,
+              "ece": 0.6941176470588235
+            },
+            "mnli:3": {
+              "n": 1242,
+              "accuracy": 0.34057971014492755,
+              "ece": 0.6594202898550725
+            }
+          },
+          "fit_on": "train",
+          "label": "maybe"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.3182,
+          "ece": 0.018026724534490668,
+          "nll": 1.0988003842726224,
+          "brier": 0.6667924550382555,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.018026724534490668
+            }
+          },
+          "by_template": {
+            "mnli:0": {
+              "n": 1203,
+              "accuracy": 0.2959268495428096,
+              "ece": 0.04029987499168097
+            },
+            "mnli:1": {
+              "n": 1280,
+              "accuracy": 0.3296875,
+              "ece": 0.006539224534490629
+            },
+            "mnli:2": {
+              "n": 1275,
+              "accuracy": 0.3058823529411765,
+              "ece": 0.0303443715933141
+            },
+            "mnli:3": {
+              "n": 1242,
+              "accuracy": 0.34057971014492755,
+              "ece": 0.004352985610436899
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "mnli/test-heldout-template": {
+      "source": "mnli",
+      "split": "test-heldout-template",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.33333333333333337,
+          "ece": null,
+          "nll": 1.0986122886681096,
+          "brier": 0.6666666666666268,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "mnli:heldout": {
+              "n": 5000,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.3182,
+          "ece": 0.6818,
+          "nll": 18.83883019684008,
+          "brier": 1.3636,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.6818
+            }
+          },
+          "by_template": {
+            "mnli:heldout": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.6818
+            }
+          },
+          "fit_on": "train",
+          "label": "maybe"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.3182,
+          "ece": 0.018026724534490668,
+          "nll": 1.0988003842726224,
+          "brier": 0.6667924550382555,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.018026724534490668
+            }
+          },
+          "by_template": {
+            "mnli:heldout": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.018026724534490668
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "mnli/test_mismatched": {
+      "source": "mnli",
+      "split": "test_mismatched",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.33333333333333337,
+          "ece": null,
+          "nll": 1.0986122886681096,
+          "brier": 0.6666666666666268,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "mnli:0": {
+              "n": 1195,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            },
+            "mnli:1": {
+              "n": 1224,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "mnli:2": {
+              "n": 1338,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "mnli:3": {
+              "n": 1243,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.3182,
+          "ece": 0.6818,
+          "nll": 18.83883019684008,
+          "brier": 1.3636,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.6818
+            }
+          },
+          "by_template": {
+            "mnli:0": {
+              "n": 1195,
+              "accuracy": 0.31464435146443515,
+              "ece": 0.6853556485355649
+            },
+            "mnli:1": {
+              "n": 1224,
+              "accuracy": 0.33169934640522875,
+              "ece": 0.6683006535947713
+            },
+            "mnli:2": {
+              "n": 1338,
+              "accuracy": 0.31763826606875933,
+              "ece": 0.6823617339312407
+            },
+            "mnli:3": {
+              "n": 1243,
+              "accuracy": 0.3089300080450523,
+              "ece": 0.6910699919549477
+            }
+          },
+          "fit_on": "train",
+          "label": "maybe"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.3182,
+          "ece": 0.018026724534490668,
+          "nll": 1.098804891927568,
+          "brier": 0.6667954470980976,
+          "by_k": {
+            "3": {
+              "n": 5000,
+              "accuracy": 0.3182,
+              "ece": 0.018026724534490668
+            }
+          },
+          "by_template": {
+            "mnli:0": {
+              "n": 1195,
+              "accuracy": 0.31464435146443515,
+              "ece": 0.02158237307005545
+            },
+            "mnli:1": {
+              "n": 1224,
+              "accuracy": 0.33169934640522875,
+              "ece": 0.00452737812926185
+            },
+            "mnli:2": {
+              "n": 1338,
+              "accuracy": 0.31763826606875933,
+              "ece": 0.018588458465731317
+            },
+            "mnli:3": {
+              "n": 1243,
+              "accuracy": 0.3089300080450523,
+              "ece": 0.027296716489438322
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "arc_easy/test": {
+      "source": "arc_easy",
+      "split": "test",
+      "role": "train",
+      "n": 2376,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 2376,
+          "accuracy": 0.25016133557800224,
+          "ece": null,
+          "nll": 1.3858224754709405,
+          "brier": 0.7498386644219978,
+          "by_k": {
+            "3": {
+              "n": 7,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "4": {
+              "n": 2365,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "5": {
+              "n": 4,
+              "accuracy": 0.2,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 2376,
+              "accuracy": 0.25016133557800224,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 2376,
+          "accuracy": 0.24621212121212122,
+          "ece": 0.7537878787878788,
+          "nll": 20.82792879571887,
+          "brier": 1.5075757575757576,
+          "by_k": {
+            "3": {
+              "n": 7,
+              "accuracy": 0.2857142857142857,
+              "ece": 0.7142857142857143
+            },
+            "4": {
+              "n": 2365,
+              "accuracy": 0.2456659619450317,
+              "ece": 0.7543340380549683
+            },
+            "5": {
+              "n": 4,
+              "accuracy": 0.5,
+              "ece": 0.5
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 2376,
+              "accuracy": 0.24621212121212122,
+              "ece": 0.7537878787878788
+            }
+          },
+          "fit_on": "train",
+          "label": 1
+        },
+        "prior": {
+          "n": 2376,
+          "accuracy": 0.24621212121212122,
+          "ece": 0.016591760263219454,
+          "nll": 1.3875295069274507,
+          "brier": 0.7499312573868357,
+          "by_k": {
+            "3": {
+              "n": 7,
+              "accuracy": 0.2857142857142857,
+              "ece": 0.05828571428571422
+            },
+            "4": {
+              "n": 2365,
+              "accuracy": 0.2456659619450317,
+              "ece": 0.0168986223668518
+            },
+            "5": {
+              "n": 4,
+              "accuracy": 0.5,
+              "ece": 0.23780487804878048
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 2376,
+              "accuracy": 0.24621212121212122,
+              "ece": 0.016591760263219454
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "arc_challenge/test": {
+      "source": "arc_challenge",
+      "split": "test",
+      "role": "train",
+      "n": 1172,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 1172,
+          "accuracy": 0.25015642775881686,
+          "ece": null,
+          "nll": 1.3858836976080608,
+          "brier": 0.749843572241183,
+          "by_k": {
+            "3": {
+              "n": 4,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "4": {
+              "n": 1165,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "5": {
+              "n": 3,
+              "accuracy": 0.20000000000000004,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 1172,
+              "accuracy": 0.25015642775881686,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 1172,
+          "accuracy": 0.26535836177474403,
+          "ece": 0.734641638225256,
+          "nll": 20.298898618442383,
+          "brier": 1.469283276450512,
+          "by_k": {
+            "3": {
+              "n": 4,
+              "accuracy": 0.25,
+              "ece": 0.75
+            },
+            "4": {
+              "n": 1165,
+              "accuracy": 0.2652360515021459,
+              "ece": 0.7347639484978541
+            },
+            "5": {
+              "n": 3,
+              "accuracy": 0.3333333333333333,
+              "ece": 0.6666666666666667
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 1172,
+              "accuracy": 0.26535836177474403,
+              "ece": 0.734641638225256
+            }
+          },
+          "fit_on": "train",
+          "label": 1
+        },
+        "prior": {
+          "n": 1172,
+          "accuracy": 0.26535836177474403,
+          "ece": 0.0024085755152744937,
+          "nll": 1.3839273623691597,
+          "brier": 0.7490439099807813,
+          "by_k": {
+            "3": {
+              "n": 4,
+              "accuracy": 0.25,
+              "ece": 0.1052465233881163
+            },
+            "4": {
+              "n": 1165,
+              "accuracy": 0.2652360515021459,
+              "ece": 0.0018808500026144537
+            },
+            "5": {
+              "n": 3,
+              "accuracy": 0.3333333333333333,
+              "ece": 0.0702247191011236
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 1172,
+              "accuracy": 0.26535836177474403,
+              "ece": 0.0024085755152744937
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "hellaswag/test": {
+      "source": "hellaswag",
+      "split": "test",
+      "role": "train",
+      "n": 3243,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 3243,
+          "accuracy": 0.25,
+          "ece": null,
+          "nll": 1.3862943611198904,
+          "brier": 0.75,
+          "by_k": {
+            "4": {
+              "n": 3243,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "hellaswag:0": {
+              "n": 820,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "hellaswag:1": {
+              "n": 861,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "hellaswag:2": {
+              "n": 781,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "hellaswag:3": {
+              "n": 781,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 3243,
+          "accuracy": 0.2479185938945421,
+          "ece": 0.7520814061054579,
+          "nll": 20.78077721299714,
+          "brier": 1.5041628122109159,
+          "by_k": {
+            "4": {
+              "n": 3243,
+              "accuracy": 0.2479185938945421,
+              "ece": 0.7520814061054579
+            }
+          },
+          "by_template": {
+            "hellaswag:0": {
+              "n": 820,
+              "accuracy": 0.2329268292682927,
+              "ece": 0.7670731707317073
+            },
+            "hellaswag:1": {
+              "n": 861,
+              "accuracy": 0.2462253193960511,
+              "ece": 0.7537746806039489
+            },
+            "hellaswag:2": {
+              "n": 781,
+              "accuracy": 0.2765685019206146,
+              "ece": 0.7234314980793854
+            },
+            "hellaswag:3": {
+              "n": 781,
+              "accuracy": 0.23687580025608196,
+              "ece": 0.763124199743918
+            }
+          },
+          "fit_on": "train",
+          "label": 3
+        },
+        "prior": {
+          "n": 3243,
+          "accuracy": 0.2479185938945421,
+          "ece": 0.009579522156701242,
+          "nll": 1.386872075511073,
+          "brier": 0.7502879149628299,
+          "by_k": {
+            "4": {
+              "n": 3243,
+              "accuracy": 0.2479185938945421,
+              "ece": 0.009579522156701242
+            }
+          },
+          "by_template": {
+            "hellaswag:0": {
+              "n": 820,
+              "accuracy": 0.2329268292682927,
+              "ece": 0.024571286782950646
+            },
+            "hellaswag:1": {
+              "n": 861,
+              "accuracy": 0.2462253193960511,
+              "ece": 0.011272796655192235
+            },
+            "hellaswag:2": {
+              "n": 781,
+              "accuracy": 0.2765685019206146,
+              "ece": 0.019070385869371265
+            },
+            "hellaswag:3": {
+              "n": 781,
+              "accuracy": 0.23687580025608196,
+              "ece": 0.020622315795161383
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "hellaswag/test-heldout-template": {
+      "source": "hellaswag",
+      "split": "test-heldout-template",
+      "role": "train",
+      "n": 3243,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 3243,
+          "accuracy": 0.25,
+          "ece": null,
+          "nll": 1.3862943611198904,
+          "brier": 0.75,
+          "by_k": {
+            "4": {
+              "n": 3243,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "hellaswag:heldout": {
+              "n": 3243,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 3243,
+          "accuracy": 0.2479185938945421,
+          "ece": 0.7520814061054579,
+          "nll": 20.78077721299714,
+          "brier": 1.5041628122109159,
+          "by_k": {
+            "4": {
+              "n": 3243,
+              "accuracy": 0.2479185938945421,
+              "ece": 0.7520814061054579
+            }
+          },
+          "by_template": {
+            "hellaswag:heldout": {
+              "n": 3243,
+              "accuracy": 0.2479185938945421,
+              "ece": 0.7520814061054579
+            }
+          },
+          "fit_on": "train",
+          "label": 3
+        },
+        "prior": {
+          "n": 3243,
+          "accuracy": 0.2479185938945421,
+          "ece": 0.009579522156701242,
+          "nll": 1.386872075511073,
+          "brier": 0.7502879149628299,
+          "by_k": {
+            "4": {
+              "n": 3243,
+              "accuracy": 0.2479185938945421,
+              "ece": 0.009579522156701242
+            }
+          },
+          "by_template": {
+            "hellaswag:heldout": {
+              "n": 3243,
+              "accuracy": 0.2479185938945421,
+              "ece": 0.009579522156701242
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "mmlu_aux/test": {
+      "source": "mmlu_aux",
+      "split": "test",
+      "role": "train",
+      "n": 2000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 2000,
+          "accuracy": 0.25,
+          "ece": null,
+          "nll": 1.3862943611198908,
+          "brier": 0.75,
+          "by_k": {
+            "4": {
+              "n": 2000,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 2000,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 2000,
+          "accuracy": 0.272,
+          "ece": 0.728,
+          "nll": 20.115383372395982,
+          "brier": 1.456,
+          "by_k": {
+            "4": {
+              "n": 2000,
+              "accuracy": 0.272,
+              "ece": 0.728
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 2000,
+              "accuracy": 0.272,
+              "ece": 0.728
+            }
+          },
+          "fit_on": "train",
+          "label": 2
+        },
+        "prior": {
+          "n": 2000,
+          "accuracy": 0.272,
+          "ece": 0.005452031839128568,
+          "nll": 1.3844672310448463,
+          "brier": 0.7490920054849627,
+          "by_k": {
+            "4": {
+              "n": 2000,
+              "accuracy": 0.272,
+              "ece": 0.005452031839128568
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 2000,
+              "accuracy": 0.272,
+              "ece": 0.005452031839128568
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "ag_news/test": {
+      "source": "ag_news",
+      "split": "test",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.25,
+          "ece": null,
+          "nll": 1.3862943611198908,
+          "brier": 0.75,
+          "by_k": {
+            "4": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1231,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "topic:1": {
+              "n": 1229,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "topic:2": {
+              "n": 1267,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "topic:3": {
+              "n": 1273,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.25,
+          "ece": 0.75,
+          "nll": 20.72326583694641,
+          "brier": 1.5,
+          "by_k": {
+            "4": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": 0.75
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1231,
+              "accuracy": 0.2607636068237206,
+              "ece": 0.7392363931762794
+            },
+            "topic:1": {
+              "n": 1229,
+              "accuracy": 0.24898291293734745,
+              "ece": 0.7510170870626526
+            },
+            "topic:2": {
+              "n": 1267,
+              "accuracy": 0.23835832675611682,
+              "ece": 0.7616416732438832
+            },
+            "topic:3": {
+              "n": 1273,
+              "accuracy": 0.25216025137470544,
+              "ece": 0.7478397486252946
+            }
+          },
+          "fit_on": "train",
+          "label": "Business"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.25,
+          "ece": 0.0005503301981188979,
+          "nll": 1.3862975594419917,
+          "brier": 0.7500015967154912,
+          "by_k": {
+            "4": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": 0.0005503301981188979
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1231,
+              "accuracy": 0.2607636068237206,
+              "ece": 0.010213276625601675
+            },
+            "topic:1": {
+              "n": 1229,
+              "accuracy": 0.24898291293734745,
+              "ece": 0.0015674172607714476
+            },
+            "topic:2": {
+              "n": 1267,
+              "accuracy": 0.23835832675611682,
+              "ece": 0.01219200344200208
+            },
+            "topic:3": {
+              "n": 1273,
+              "accuracy": 0.25216025137470544,
+              "ece": 0.0016099211765864818
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "ag_news/test-heldout-template": {
+      "source": "ag_news",
+      "split": "test-heldout-template",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.25,
+          "ece": null,
+          "nll": 1.3862943611198908,
+          "brier": 0.75,
+          "by_k": {
+            "4": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.25,
+          "ece": 0.75,
+          "nll": 20.72326583694641,
+          "brier": 1.5,
+          "by_k": {
+            "4": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": 0.75
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": 0.75
+            }
+          },
+          "fit_on": "train",
+          "label": "Business"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.25,
+          "ece": 0.0005503301981188979,
+          "nll": 1.3862975594419917,
+          "brier": 0.7500015967154912,
+          "by_k": {
+            "4": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": 0.0005503301981188979
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.25,
+              "ece": 0.0005503301981188979
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "yahoo/test": {
+      "source": "yahoo",
+      "split": "test",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.09999999999999999,
+          "ece": null,
+          "nll": 2.3025850929940455,
+          "brier": 0.9000000000000258,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1257,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            },
+            "topic:1": {
+              "n": 1247,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            },
+            "topic:2": {
+              "n": 1255,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            },
+            "topic:3": {
+              "n": 1241,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.1,
+          "ece": 0.9,
+          "nll": 24.867919004335693,
+          "brier": 1.8,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.9
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1257,
+              "accuracy": 0.09228321400159109,
+              "ece": 0.9077167859984089
+            },
+            "topic:1": {
+              "n": 1247,
+              "accuracy": 0.11948676824378508,
+              "ece": 0.8805132317562149
+            },
+            "topic:2": {
+              "n": 1255,
+              "accuracy": 0.08924302788844622,
+              "ece": 0.9107569721115538
+            },
+            "topic:3": {
+              "n": 1241,
+              "accuracy": 0.0991136180499597,
+              "ece": 0.9008863819500403
+            }
+          },
+          "fit_on": "train",
+          "label": "Education & Reference"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.1,
+          "ece": 0.002799440111977594,
+          "nll": 2.3027727892860392,
+          "brier": 0.900037367451519,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.002799440111977594
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1257,
+              "accuracy": 0.09228321400159109,
+              "ece": 0.010516226110386495
+            },
+            "topic:1": {
+              "n": 1247,
+              "accuracy": 0.11948676824378508,
+              "ece": 0.016687328131807497
+            },
+            "topic:2": {
+              "n": 1255,
+              "accuracy": 0.08924302788844622,
+              "ece": 0.013556412223531378
+            },
+            "topic:3": {
+              "n": 1241,
+              "accuracy": 0.0991136180499597,
+              "ece": 0.003685822062017882
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "yahoo/test-heldout-template": {
+      "source": "yahoo",
+      "split": "test-heldout-template",
+      "role": "train",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.09999999999999999,
+          "ece": null,
+          "nll": 2.3025850929940455,
+          "brier": 0.9000000000000258,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.1,
+          "ece": 0.9,
+          "nll": 24.867919004335693,
+          "brier": 1.8,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.9
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.9
+            }
+          },
+          "fit_on": "train",
+          "label": "Education & Reference"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.1,
+          "ece": 0.002799440111977594,
+          "nll": 2.3027727892860392,
+          "brier": 0.900037367451519,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.002799440111977594
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.002799440111977594
+            }
+          },
+          "fit_on": "train"
+        }
+      }
+    },
+    "commonsense_qa/test": {
+      "source": "commonsense_qa",
+      "split": "test",
+      "role": "heldout",
+      "n": 1221,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 1221,
+          "accuracy": 0.20098280098280097,
+          "ece": null,
+          "nll": 1.6050517984033539,
+          "brier": 0.799017199017182,
+          "by_k": {
+            "4": {
+              "n": 24,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "5": {
+              "n": 1197,
+              "accuracy": 0.19999999999999998,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 1221,
+              "accuracy": 0.20098280098280097,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 1221,
+          "accuracy": 0.20966420966420968,
+          "ece": 0.7903357903357904,
+          "nll": 21.837784911442302,
+          "brier": 1.5806715806715808,
+          "by_k": {
+            "4": {
+              "n": 24,
+              "accuracy": 0.125,
+              "ece": 0.875
+            },
+            "5": {
+              "n": 1197,
+              "accuracy": 0.21136173767752714,
+              "ece": 0.7886382623224728
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 1221,
+              "accuracy": 0.20966420966420968,
+              "ece": 0.7903357903357904
+            }
+          },
+          "fit_on": "test",
+          "label": 1
+        },
+        "prior": {
+          "n": 1221,
+          "accuracy": 0.20966420966420968,
+          "ece": 0.0009120818983434364,
+          "nll": 1.6046079248501206,
+          "brier": 0.7988504062331364,
+          "by_k": {
+            "4": {
+              "n": 24,
+              "accuracy": 0.125,
+              "ece": 0.1330321285140562
+            },
+            "5": {
+              "n": 1197,
+              "accuracy": 0.21136173767752714,
+              "ece": 0.00173694159269841
+            }
+          },
+          "by_template": {
+            "native": {
+              "n": 1221,
+              "accuracy": 0.20966420966420968,
+              "ece": 0.0009120818983434364
+            }
+          },
+          "fit_on": "test"
+        }
+      }
+    },
+    "dbpedia/test": {
+      "source": "dbpedia",
+      "split": "test",
+      "role": "heldout",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.0714285714285714,
+          "ece": null,
+          "nll": 2.639057329615259,
+          "brier": 0.9285714285714821,
+          "by_k": {
+            "14": {
+              "n": 5000,
+              "accuracy": 0.0714285714285714,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1269,
+              "accuracy": 0.0714285714285714,
+              "ece": null
+            },
+            "topic:1": {
+              "n": 1249,
+              "accuracy": 0.0714285714285714,
+              "ece": null
+            },
+            "topic:2": {
+              "n": 1208,
+              "accuracy": 0.07142857142857141,
+              "ece": null
+            },
+            "topic:3": {
+              "n": 1274,
+              "accuracy": 0.07142857142857141,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.0716,
+          "ece": 0.9284,
+          "nll": 25.652640004028065,
+          "brier": 1.8568,
+          "by_k": {
+            "14": {
+              "n": 5000,
+              "accuracy": 0.0716,
+              "ece": 0.9284
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1269,
+              "accuracy": 0.08195429472025216,
+              "ece": 0.9180457052797478
+            },
+            "topic:1": {
+              "n": 1249,
+              "accuracy": 0.07285828662930344,
+              "ece": 0.9271417133706965
+            },
+            "topic:2": {
+              "n": 1208,
+              "accuracy": 0.07036423841059603,
+              "ece": 0.929635761589404
+            },
+            "topic:3": {
+              "n": 1274,
+              "accuracy": 0.061224489795918366,
+              "ece": 0.9387755102040817
+            }
+          },
+          "fit_on": "test",
+          "label": "Company"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.0716,
+          "ece": 4.786597527089986e-07,
+          "nll": 2.639056849938598,
+          "brier": 0.9285713600004885,
+          "by_k": {
+            "14": {
+              "n": 5000,
+              "accuracy": 0.0716,
+              "ece": 4.786597527089986e-07
+            }
+          },
+          "by_template": {
+            "topic:0": {
+              "n": 1269,
+              "accuracy": 0.08195429472025216,
+              "ece": 0.010354773380004872
+            },
+            "topic:1": {
+              "n": 1249,
+              "accuracy": 0.07285828662930344,
+              "ece": 0.001258765289056149
+            },
+            "topic:2": {
+              "n": 1208,
+              "accuracy": 0.07036423841059603,
+              "ece": 0.0012352829296512768
+            },
+            "topic:3": {
+              "n": 1274,
+              "accuracy": 0.061224489795918366,
+              "ece": 0.010375031544328922
+            }
+          },
+          "fit_on": "test"
+        }
+      }
+    },
+    "dbpedia/test-heldout-template": {
+      "source": "dbpedia",
+      "split": "test-heldout-template",
+      "role": "heldout",
+      "n": 5000,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 5000,
+          "accuracy": 0.0714285714285714,
+          "ece": null,
+          "nll": 2.639057329615259,
+          "brier": 0.9285714285714821,
+          "by_k": {
+            "14": {
+              "n": 5000,
+              "accuracy": 0.0714285714285714,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.0714285714285714,
+              "ece": null
+            }
+          },
+          "fit_on": null
+        },
+        "majority": {
+          "n": 5000,
+          "accuracy": 0.0716,
+          "ece": 0.9284,
+          "nll": 25.652640004028065,
+          "brier": 1.8568,
+          "by_k": {
+            "14": {
+              "n": 5000,
+              "accuracy": 0.0716,
+              "ece": 0.9284
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.0716,
+              "ece": 0.9284
+            }
+          },
+          "fit_on": "test",
+          "label": "Company"
+        },
+        "prior": {
+          "n": 5000,
+          "accuracy": 0.0716,
+          "ece": 4.786597527089986e-07,
+          "nll": 2.639056849938598,
+          "brier": 0.9285713600004885,
+          "by_k": {
+            "14": {
+              "n": 5000,
+              "accuracy": 0.0716,
+              "ece": 4.786597527089986e-07
+            }
+          },
+          "by_template": {
+            "topic:heldout": {
+              "n": 5000,
+              "accuracy": 0.0716,
+              "ece": 4.786597527089986e-07
+            }
+          },
+          "fit_on": "test"
+        }
+      }
+    },
+    "pooled/test": {
+      "source": "pooled",
+      "split": "test",
+      "role": "train",
+      "n": 27061,
+      "metrics": null,
+      "baselines": {
+        "random": {
+          "n": 27061,
+          "accuracy": 0.2679126171735462,
+          "ece": null,
+          "nll": 1.4186231560181972,
+          "brier": 0.7320873828266419,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.09999999999999999,
+              "ece": null
+            },
+            "2": {
+              "n": 3270,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "3": {
+              "n": 5011,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            },
+            "4": {
+              "n": 13773,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "5": {
+              "n": 7,
+              "accuracy": 0.19999999999999998,
+              "ece": null
+            }
+          },
+          "by_template": {
+            "boolq:0": {
+              "n": 826,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "boolq:1": {
+              "n": 795,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "boolq:2": {
+              "n": 819,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "boolq:3": {
+              "n": 830,
+              "accuracy": 0.5,
+              "ece": null
+            },
+            "hellaswag:0": {
+              "n": 820,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "hellaswag:1": {
+              "n": 861,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "hellaswag:2": {
+              "n": 781,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "hellaswag:3": {
+              "n": 781,
+              "accuracy": 0.25,
+              "ece": null
+            },
+            "mnli:0": {
+              "n": 1203,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "mnli:1": {
+              "n": 1280,
+              "accuracy": 0.33333333333333337,
+              "ece": null
+            },
+            "mnli:2": {
+              "n": 1275,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "mnli:3": {
+              "n": 1242,
+              "accuracy": 0.3333333333333333,
+              "ece": null
+            },
+            "native": {
+              "n": 5548,
+              "accuracy": 0.25010213890891614,
+              "ece": null
+            },
+            "topic:0": {
+              "n": 2488,
+              "accuracy": 0.17421623794212215,
+              "ece": null
+            },
+            "topic:1": {
+              "n": 2476,
+              "accuracy": 0.17445476575121163,
+              "ece": null
+            },
+            "topic:2": {
+              "n": 2522,
+              "accuracy": 0.17535685963521014,
+              "ece": null
+            },
+            "topic:3": {
+              "n": 2514,
+              "accuracy": 0.17595465393794749,
+              "ece": null
+            }
+          }
+        },
+        "majority": {
+          "n": 27061,
+          "accuracy": 0.28151213924097407,
+          "ece": 0.7184878607590259,
+          "nll": 19.852553252170974,
+          "brier": 1.4369757215180519,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.9
+            },
+            "2": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.3782874617737003
+            },
+            "3": {
+              "n": 5011,
+              "accuracy": 0.3181001796048693,
+              "ece": 0.6818998203951308
+            },
+            "4": {
+              "n": 13773,
+              "accuracy": 0.2532491105786684,
+              "ece": 0.7467508894213316
+            },
+            "5": {
+              "n": 7,
+              "accuracy": 0.42857142857142855,
+              "ece": 0.5714285714285714
+            }
+          },
+          "by_template": {
+            "boolq:0": {
+              "n": 826,
+              "accuracy": 0.6343825665859564,
+              "ece": 0.3656174334140436
+            },
+            "boolq:1": {
+              "n": 795,
+              "accuracy": 0.6188679245283019,
+              "ece": 0.38113207547169814
+            },
+            "boolq:2": {
+              "n": 819,
+              "accuracy": 0.6385836385836385,
+              "ece": 0.36141636141636146
+            },
+            "boolq:3": {
+              "n": 830,
+              "accuracy": 0.5951807228915663,
+              "ece": 0.4048192771084337
+            },
+            "hellaswag:0": {
+              "n": 820,
+              "accuracy": 0.2329268292682927,
+              "ece": 0.7670731707317073
+            },
+            "hellaswag:1": {
+              "n": 861,
+              "accuracy": 0.2462253193960511,
+              "ece": 0.7537746806039489
+            },
+            "hellaswag:2": {
+              "n": 781,
+              "accuracy": 0.2765685019206146,
+              "ece": 0.7234314980793854
+            },
+            "hellaswag:3": {
+              "n": 781,
+              "accuracy": 0.23687580025608196,
+              "ece": 0.763124199743918
+            },
+            "mnli:0": {
+              "n": 1203,
+              "accuracy": 0.2959268495428096,
+              "ece": 0.7040731504571904
+            },
+            "mnli:1": {
+              "n": 1280,
+              "accuracy": 0.3296875,
+              "ece": 0.6703125
+            },
+            "mnli:2": {
+              "n": 1275,
+              "accuracy": 0.3058823529411765,
+              "ece": 0.6941176470588235
+            },
+            "mnli:3": {
+              "n": 1242,
+              "accuracy": 0.34057971014492755,
+              "ece": 0.6594202898550725
+            },
+            "native": {
+              "n": 5548,
+              "accuracy": 0.2595529920692141,
+              "ece": 0.7404470079307859
+            },
+            "topic:0": {
+              "n": 2488,
+              "accuracy": 0.17564308681672025,
+              "ece": 0.8243569131832797
+            },
+            "topic:1": {
+              "n": 2476,
+              "accuracy": 0.18376413570274636,
+              "ece": 0.8162358642972536
+            },
+            "topic:2": {
+              "n": 2522,
+              "accuracy": 0.1641554321966693,
+              "ece": 0.8358445678033307
+            },
+            "topic:3": {
+              "n": 2514,
+              "accuracy": 0.1766109785202864,
+              "ece": 0.8233890214797136
+            }
+          }
+        },
+        "prior": {
+          "n": 27061,
+          "accuracy": 0.28151213924097407,
+          "ece": 0.0064417748408738705,
+          "nll": 1.4150784568990349,
+          "brier": 0.7284807259269727,
+          "by_k": {
+            "10": {
+              "n": 5000,
+              "accuracy": 0.1,
+              "ece": 0.002799440111977594
+            },
+            "2": {
+              "n": 3270,
+              "accuracy": 0.6217125382262997,
+              "ece": 0.003007622018781131
+            },
+            "3": {
+              "n": 5011,
+              "accuracy": 0.3181001796048693,
+              "ece": 0.01815258606386061
+            },
+            "4": {
+              "n": 13773,
+              "accuracy": 0.2532491105786684,
+              "ece": 0.004406304313590292
+            },
+            "5": {
+              "n": 7,
+              "accuracy": 0.42857142857142855,
+              "ece": 0.16598480992835613
+            }
+          },
+          "by_template": {
+            "boolq:0": {
+              "n": 826,
+              "accuracy": 0.6343825665859564,
+              "ece": 0.009662406340875562
+            },
+            "boolq:1": {
+              "n": 795,
+              "accuracy": 0.6188679245283019,
+              "ece": 0.005852235716779064
+            },
+            "boolq:2": {
+              "n": 819,
+              "accuracy": 0.6385836385836385,
+              "ece": 0.013863478338557722
+            },
+            "boolq:3": {
+              "n": 830,
+              "accuracy": 0.5951807228915663,
+              "ece": 0.029539437353514497
+            },
+            "hellaswag:0": {
+              "n": 820,
+              "accuracy": 0.2329268292682927,
+              "ece": 0.024571286782950646
+            },
+            "hellaswag:1": {
+              "n": 861,
+              "accuracy": 0.2462253193960511,
+              "ece": 0.011272796655192235
+            },
+            "hellaswag:2": {
+              "n": 781,
+              "accuracy": 0.2765685019206146,
+              "ece": 0.019070385869371265
+            },
+            "hellaswag:3": {
+              "n": 781,
+              "accuracy": 0.23687580025608196,
+              "ece": 0.020622315795161383
+            },
+            "mnli:0": {
+              "n": 1203,
+              "accuracy": 0.2959268495428096,
+              "ece": 0.04029987499168097
+            },
+            "mnli:1": {
+              "n": 1280,
+              "accuracy": 0.3296875,
+              "ece": 0.006539224534490629
+            },
+            "mnli:2": {
+              "n": 1275,
+              "accuracy": 0.3058823529411765,
+              "ece": 0.0303443715933141
+            },
+            "mnli:3": {
+              "n": 1242,
+              "accuracy": 0.34057971014492755,
+              "ece": 0.004352985610436899
+            },
+            "native": {
+              "n": 5548,
+              "accuracy": 0.2595529920692141,
+              "ece": 0.004783179594512554
+            },
+            "topic:0": {
+              "n": 2488,
+              "accuracy": 0.17564308681672025,
+              "ece": 0.010366334303404938
+            },
+            "topic:1": {
+              "n": 2476,
+              "accuracy": 0.18376413570274636,
+              "ece": 0.009182331984592916
+            },
+            "topic:2": {
+              "n": 2522,
+              "accuracy": 0.1641554321966693,
+              "ece": 0.012870961816633036
+            },
+            "topic:3": {
+              "n": 2514,
+              "accuracy": 0.1766109785202864,
+              "ece": 0.0026346598396017433
+            }
+          }
+        }
+      }
+    }
+  }
+}
