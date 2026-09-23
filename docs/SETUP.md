@@ -113,6 +113,51 @@ batches grouped by length so that padding stays small:
   since neither backend skips it here (table above). Grouping by length matters as much as grouping
   by K (D10).
 
+## Training (Phase 1)
+
+```bash
+uv run pytest                                                   # model tests run on the CPU (D21)
+uv run --extra gpu python -m trueodds.train configs/phase1-overfit.yaml
+uv run --extra gpu python -m trueodds.train configs/phase2-base.yaml \
+    --max-steps 50 --longest-first --no-eval --run phase1-vram-probe  # VRAM probe
+uv run --extra gpu tensorboard --logdir ~/.trueodds/runs
+```
+
+Each run writes `~/.trueodds/runs/<run>/`: `config.yaml`, `summary.json`, `tb/`, and the `best/` (by
+dev accuracy) and `last/` checkpoints, about 0.6 GB each.
+
+**Overfit, 2026-09-23** (`configs/phase1-overfit.yaml`): 200 training questions, 25 per training
+source, templates not re-sampled, lr 3e-5, 40 epochs = 280 steps of 32 questions. Scored on the same
+200 with `harness.metrics`:
+
+| Step | Train accuracy | Train NLL | Dev accuracy (400) |
+|---|---|---|---|
+| 50 | 0.815 | 0.635 | 0.338 |
+| 100 | 0.975 | 0.081 | 0.345 |
+| 150 | 0.995 | 0.022 | 0.345 |
+| 200 | 1.000 | 4.3e-5 | 0.343 |
+| 280 | 1.000 | 1.6e-5 | 0.345 |
+
+Dev stays near chance, as expected from 200 examples; the run only proves the loop can fit. Peak
+13.75 GiB reserved, ~24.8k padded tokens/s.
+
+**VRAM at the Phase 2 settings** (`configs/phase2-base.yaml`: the full mix, 32 questions per step,
+16,384-token micro-batches, no gradient checkpointing). `--longest-first` orders the steps by their
+costliest micro-batch, so the 50 steps run are the heaviest of the epoch:
+
+| Allocator | Peak reserved | Peak allocated | Padded tokens/s |
+|---|---|---|---|
+| default | 13.07 GiB | 12.29 GiB | 23.5k |
+| `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` | 12.34 GiB | 12.25 GiB | 23.5k |
+
+Both are under the 15 GiB budget. `expandable_segments` removes most of the gap between reserved and
+allocated (fragmentation) at no cost in throughput, so it is worth setting for Phase 2.
+
+**Scoring a checkpoint with the harness** (`harness.evaluate --checkpoint`, every test and held-out
+file, 33,282 questions and 202,781 sequences plus the template and mismatched files): 565 s on this GPU
+for the overfit checkpoint. Checked end to end; its numbers are near chance, as expected, and were
+not kept.
+
 ## Workarounds
 
 - **A micro-batch that passes a short probe can still run out of memory later.** With padded

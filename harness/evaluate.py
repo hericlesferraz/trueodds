@@ -4,6 +4,7 @@ A predictor is anything with a `name` and `predict(examples) -> list of probabil
 The baselines are computed and written next to every result, so each number has its reference.
 
     uv run python -m harness.evaluate --baselines      # the baselines alone, before any model
+    uv run --extra gpu python -m harness.evaluate --checkpoint ~/.trueodds/runs/<run>/best
 """
 
 from __future__ import annotations
@@ -171,12 +172,19 @@ def write(result: dict, results_dir: Path = paths.RESULTS) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--baselines", action="store_true", help="score the baselines alone")
+    which = parser.add_mutually_exclusive_group(required=True)
+    which.add_argument("--baselines", action="store_true", help="score the baselines alone")
+    which.add_argument("--checkpoint", type=Path, help="a checkpoint dir written by the trainer")
     parser.add_argument("--data-dir", type=Path, default=paths.DATA)
     args = parser.parse_args()
-    if not args.baselines:
-        parser.error("only --baselines exists until Phase 1 adds a model predictor")
-    path = write(evaluate(None, args.data_dir))
+    if args.baselines:
+        path = write(evaluate(None, args.data_dir))
+    else:
+        from trueodds.predict import ModelPredictor
+
+        ckpt = args.checkpoint.expanduser().resolve()
+        predictor = ModelPredictor.load(ckpt)
+        path = write(evaluate(predictor, args.data_dir, run=ckpt.parent.name, checkpoint=ckpt.name))
     print(f"wrote {path}")
 
 

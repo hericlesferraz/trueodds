@@ -25,6 +25,13 @@ Per source and split (test for the training sources, the labelled split for the 
 A reliability diagram (confidence against observed accuracy, per bin) is saved for the pooled test
 split and each held-out dataset.
 
+A trained checkpoint is scored with `--checkpoint` (Phase 1 added it); the model goes through
+`trueodds.predict.ModelPredictor`, which is a predictor like the baselines:
+
+```bash
+uv run --extra gpu python -m harness.evaluate --checkpoint ~/.trueodds/runs/<run>/best
+```
+
 ### Latency (`harness/latency`, Phase 4)
 
 p50 and p95 per request by number of options and state length, and the time for many questions

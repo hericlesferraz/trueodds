@@ -9,14 +9,16 @@ dependencies = [
     "datasets>=3.0",
     "numpy>=1.26",
     "pyyaml>=6.0",
+    "safetensors>=0.4",
     "tokenizers>=0.20",
+    "torch>=2.8",  # a base dependency since Phase 1; the unit tests run it on the CPU (D21)
     "transformers>=4.48",  # 4.48 is the first release with ModernBERT
 ]
 
-# GPU components are optional so that `uv sync` and `uv run pytest` work on a machine without a
-# GPU. Install them with `uv sync --extra gpu`, and run GPU commands as `uv run --extra gpu ...`.
+# Tools only a GPU machine or a training run needs. Install them with `uv sync --extra gpu`, and run
+# training and GPU commands as `uv run --extra gpu ...`.
 [project.optional-dependencies]
-gpu = ["torch>=2.8", "nvidia-ml-py>=12.0"]
+gpu = ["nvidia-ml-py>=12.0", "tensorboard>=2.17"]
 
 [dependency-groups]
 dev = ["pytest>=8.2", "ruff>=0.6"]

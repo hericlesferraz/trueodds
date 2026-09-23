@@ -312,6 +312,56 @@ the text.
 
 ---
 
+## D21 — torch is a base dependency
+*2026-09-23, changes the `gpu` extra of Phase 0*
+
+**Decision:** `torch` moves from the `gpu` extra to the base dependencies, still from the cu128 index
+(D11). The `gpu` extra keeps what only a training machine needs: `nvidia-ml-py` and `tensorboard`.
+
+**Why:** from Phase 1 the package is a torch model, and the tests that prove its properties (a padded
+option gets probability 0, shuffling options shuffles probabilities, the tiny model overfits a known
+set) need torch but not a GPU: they run on a tiny random ModernBERT on the CPU in seconds. With torch
+optional they would be skipped by a plain `uv run pytest`, and a skipped exit-criterion test is easy
+to miss. The cost is a larger first `uv sync`.
+
+---
+
+## D22 — An optimizer step is 32 questions, split into micro-batches by a token budget
+*2026-09-23, refines D10: the micro-batch is sized in padded tokens, not in sequences*
+
+**Decision:** each optimizer step takes 32 questions (`questions_per_step`). An epoch shuffles the
+questions, sorts them by (K, length) within chunks of 64 steps, cuts the chunks into steps and
+shuffles the steps. Each step is split into micro-batches whose padded size (longest sequence ×
+sequences) is at most 16,384 tokens (`max_tokens_per_microbatch`); the loss of each micro-batch is
+its summed cross-entropy divided by the step's 32 questions, so the accumulated gradient is the mean
+over the step whatever the split. Padded options are never encoded: only the N real sequences go
+through the encoder, and their scores are scattered into a [B, K_max] matrix filled with −inf.
+
+**Why:** the effective batch stays ~32 questions (PLAN.md) whether a step is 32 BoolQ questions (64
+sequences) or 32 Yahoo questions (320). The budget is in tokens because throughput is constant in
+tokens (SETUP.md), and 16,384 is a margin below the ~18.4k that fit in Phase 0. Measured in Phase 1
+on the 50 costliest steps of the full mix: 13.07 GiB peak reserved, 12.34 GiB with
+`expandable_segments`. Sorting within chunks makes most steps a single K (so little padding) while
+keeping the order across steps random. The cost: most steps come from one source, which makes the
+gradient noisier across tasks than a fully mixed batch.
+
+---
+
+## D23 — Training re-samples the question template every epoch
+*2026-09-23, makes D8 concrete*
+
+**Decision:** in training, each templated question is re-rendered from its `vars` with a random
+trained template every time it is drawn (`resample_templates`). Dev and test keep the stored
+question, whose template is fixed by the example id. The held-out template is never rendered in
+training; `resample_template` raises if it meets one.
+
+**Why:** the stored train files hold one template per example, fixed at conversion. Re-sampling
+shows the model every phrasing of every question over the epochs, which is what D8 asks for, at the
+cost of a few tokenizations per step. The Phase 1 overfit run turns it off, so that the 200
+questions it memorizes are the ones it is scored on.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

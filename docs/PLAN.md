@@ -7,7 +7,7 @@ once Phase 0 produces the baselines.
 | Phase | Goal | Exit when |
 |---|---|---|
 | 0 ✓ | Environment, data and harness, no training | ModernBERT runs in bf16 on this GPU; every dataset is converted with counts per split; the harness scores accuracy, ECE, NLL and Brier and reports the baselines on test and held-out; throughput is measured |
-| 1 | Model and training loop, proved on a tiny set | The model overfits 200 examples; option masking, truncation and permutation are proved by tests |
+| 1 ✓ | Model and training loop, proved on a tiny set | The model overfits 200 examples; option masking, truncation and permutation are proved by tests |
 | 2 | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
 | 3 | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
 | 4 | Inference (v1) | `predict()` answers in tens of milliseconds, and many questions about one state are measured as a batch |
@@ -92,26 +92,32 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
 ## Phase 1 — Model and training loop, proved on a tiny set
 
 **Tasks**
-- [ ] The model (D2): ModernBERT-base encodes each `(state, question, option)` sequence, a pooled
+- [x] The model (D2): ModernBERT-base encodes each `(state, question, option)` sequence, a pooled
       vector goes through a linear layer to one score, and the scores of one question are
-      softmaxed across its options.
-- [ ] Variable option counts: pad the options of a batch to the largest K, and give padded options
-      a score of −inf before the softmax.
-- [ ] Truncation to 512 tokens: the question and the option are never cut; the state is cut to
-      what is left (D9).
-- [ ] Training loop: bf16, AdamW, linear warmup then linear decay, gradient accumulation, optional
+      softmaxed across its options. *`src/trueodds/model.py`; CLS and mean pooling both built.*
+- [x] Variable option counts: pad the options of a batch to the largest K, and give padded options
+      a score of −inf before the softmax. *Padded options are not even encoded (D22).*
+- [x] Truncation to 512 tokens: the question and the option are never cut; the state is cut to
+      what is left (D9). *`src/trueodds/encode.py`.*
+- [x] Training loop: bf16, AdamW, linear warmup then linear decay, gradient accumulation, optional
       gradient checkpointing, evaluation and checkpoint every N steps, the best checkpoint kept by
-      dev accuracy. Logs to TensorBoard. One YAML per run in `configs/`.
-- [ ] Unit tests, on a tiny random model: a padded option never gets probability > 0; the
+      dev accuracy. Logs to TensorBoard. One YAML per run in `configs/`. *`src/trueodds/train.py`;
+      steps of 32 questions in token-budget micro-batches (D22); templates re-sampled (D23).*
+- [x] Unit tests, on a tiny random model: a padded option never gets probability > 0; the
       probabilities of one question sum to 1; shuffling the options shuffles the probabilities the
       same way (the model has no position bias across options, by construction); truncation keeps
-      the question and the option whole.
-- [ ] Overfit run: 200 training examples, mixed across sources.
+      the question and the option whole. *`tests/test_model.py`, `tests/test_encode.py`; torch is a
+      base dependency so they run on the CPU (D21).*
+- [x] Overfit run: 200 training examples, mixed across sources. *`configs/phase1-overfit.yaml`.*
 
-**Exit criteria**
+**Exit criteria** — met on 2026-09-23
 - On the 200 examples, training accuracy reaches 100% and loss falls below 0.05 *(initial)*.
-- The unit tests above pass.
+  *Accuracy 1.000 and NLL 1.6e-5 after 280 steps (1.000 from step 200), scored with
+  `harness.metrics`; `~/.trueodds/runs/phase1-overfit/summary.json`, numbers in SETUP.md.*
+- The unit tests above pass. *`uv run pytest`: 66 passed.*
 - Peak VRAM of the training loop at the Phase 2 settings is measured and under 15 GB.
+  *13.07 GiB reserved (12.29 allocated) on the 50 costliest steps of the full mix; 12.34 GiB with
+  `expandable_segments`.*
 
 ---
 

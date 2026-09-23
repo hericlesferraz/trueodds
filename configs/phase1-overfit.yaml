@@ -1,0 +1,16 @@
+# Phase 1 exit criterion: the model overfits 200 training questions, 25 from each training source.
+# Scored on the same 200 as stored (templates not re-sampled), and on a dev sample to watch.
+run: phase1-overfit
+pooling: cls
+train_limit: 25
+eval_sets: [train, dev]
+eval_limit: 50
+resample_templates: false
+lr: 3.0e-5
+warmup_ratio: 0.06
+epochs: 40
+questions_per_step: 32
+max_tokens_per_microbatch: 16384
+eval_every: 50
+log_every: 10
+seed: 0

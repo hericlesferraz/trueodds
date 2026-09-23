@@ -1,0 +1,16 @@
+# Phase 2 settings (PLAN.md): the full Phase 0 mix, 3 epochs, ~32 questions per optimizer step.
+# Phase 1 runs it only as a VRAM probe: --max-steps 50 --longest-first --no-eval.
+run: phase2-base
+pooling: cls
+eval_sets: [dev]
+resample_templates: true
+lr: 3.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.06
+epochs: 3
+questions_per_step: 32
+max_tokens_per_microbatch: 16384
+grad_checkpointing: false
+eval_every: 1000
+log_every: 50
+seed: 0

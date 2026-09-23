@@ -12,9 +12,10 @@ and calibration, meaning outcomes it gives 0.8 should happen about 80% of the ti
 
 Runs entirely on consumer hardware: RTX 5060 Ti 16 GB, 32 GB RAM, Ubuntu.
 
-**Status: Phase 0 done (2026-09-23).** The data (spec 001), the harness with its baselines
-(spec 002) and the GPU measurements (`docs/SETUP.md`) exist; decisions run to D20. Phase 1 (model
-and training loop) is next.
+**Status: Phase 1 done (2026-09-23).** The data (spec 001), the harness with its baselines
+(spec 002), the GPU measurements (`docs/SETUP.md`), the model and the training loop exist; the model
+overfits 200 examples and the Phase 2 settings peak at 13.1 GiB. Decisions run to D23. Phase 2 (full
+training) is next.
 
 ## Project map
 
@@ -68,15 +69,17 @@ tests/                  # unit tests; no GPU required
 ## Commands
 
 ```bash
-uv sync                                   # base package and dev tools; no GPU needed
-uv run pytest                             # unit tests (GPU tests deselected)
+uv sync                                   # base package (torch included, D21) and dev tools
+uv run pytest                             # unit tests, model tests on the CPU (GPU tests deselected)
 uv run ruff check . && uv run ruff format --check .
-uv run --extra gpu <cmd>                  # anything that needs torch; a plain `uv sync` removes it
+uv run --extra gpu <cmd>                  # training and GPU tools (tensorboard, nvidia-ml-py)
 
 uv run python scripts/prepare_data.py     # download and convert every dataset to ~/.trueodds/data
 uv run python -m harness.evaluate --baselines
 uv run python -m harness.report harness/results/*-baselines.json
 uv run --extra gpu python scripts/gpu_bench.py
+uv run --extra gpu python -m trueodds.train configs/<run>.yaml          # checkpoints in ~/.trueodds/runs/
+uv run --extra gpu python -m harness.evaluate --checkpoint ~/.trueodds/runs/<run>/best
 ```
 
 Details and measured results are in `docs/SETUP.md`.

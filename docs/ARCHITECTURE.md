@@ -1,7 +1,7 @@
 # Architecture
 
-Phase 0 has built the data and the harness; the model is Phase 1. This is the design the plan
-starts from; each part is confirmed or changed by a measurement in the phase that builds it.
+Phase 0 built the data and the harness, Phase 1 the model and the training loop. This is the design
+the plan starts from; each part is confirmed or changed by a measurement in the phase that builds it.
 
 ## Data flow
 
@@ -59,11 +59,26 @@ Answer formats:
 | Multiple choice (ARC, HellaSwag, MMLU aux, CommonsenseQA) | the answer texts |
 | Topic (AG News, Yahoo, DBpedia-14) | the label names, written as words ("Sports", "Science & Mathematics") |
 
+### Batches and masking (D22)
+
+A batch of B questions with up to K_max options is flattened to its N real sequences only; padded
+options are never encoded. The N scores are scattered into a [B, K_max] matrix filled with −inf, so
+the softmax gives padded options exactly 0 and the cross-entropy never sees them. This is what the
+unit tests check on a tiny random ModernBERT (`tests/test_model.py`): padded options get 0, each row
+sums to 1, and permuting the options permutes the probabilities.
+
+An optimizer step is 32 questions of similar K and length, split into micro-batches of at most
+16,384 padded tokens, with the loss divided by the step's question count so that the accumulated
+gradient does not depend on the split.
+
 ## Input and truncation
 
 Maximum 512 tokens per sequence (D9). The question and the option are tokenized first and never
 cut; the state gets the remaining budget and is cut at its end. If the question and the option alone
 exceed the budget, the example is dropped at conversion and counted.
+
+`src/trueodds/encode.py` does it (`build_ids`); the empty state of ARC and CommonsenseQA keeps its
+`[SEP]`, so every sequence has the same four special tokens.
 
 ## Memory and throughput
 
@@ -76,10 +91,26 @@ SDPA attention (D19):
 | Largest training micro-batch under 15 GiB | 36 sequences at 512 tokens, 76 at 256, 152 at 128 (no gradient checkpointing) |
 | Training throughput | ~25k tokens/s at any length; gradient checkpointing costs ~22% |
 | One epoch of the Phase 2 mix | 154.6M tokens, ~100 min if batches are grouped by length |
+| Phase 2 training loop, 50 costliest steps (Phase 1) | 13.07 GiB peak reserved; 12.34 GiB with `expandable_segments`; ~23.5k padded tokens/s |
 
 Throughput is constant in tokens, and neither attention backend skips the compute on padding here,
 so batches are grouped by length as well as by K. One question with 10 options (Yahoo) costs as much
-as five yes/no questions, so the micro-batch is sized in sequences, not questions (D10).
+as five yes/no questions, so the micro-batch is sized in padded tokens, not questions (D10, D22).
+
+## Code
+
+| Module | Role |
+|---|---|
+| `trueodds/encode.py` | tokenization and truncation (D9), no torch |
+| `trueodds/model.py` | `DecisionModel`: encoder, pooling (CLS or mean), linear head, masked scores; save and load |
+| `trueodds/batching.py` | steps, token-budget micro-batches, collation (D22) |
+| `trueodds/train.py` | the training loop, one YAML config per run |
+| `trueodds/predict.py` | `ModelPredictor`, the harness `Predictor` for a checkpoint |
+
+A checkpoint directory (`~/.trueodds/runs/<run>/best/` and `last/`) holds `model.safetensors`, the
+encoder's `config.json`, `model.json` (backbone, pooling, max length) and the tokenizer, so it loads
+without the Hub. The run directory also holds `config.yaml`, `summary.json` and the TensorBoard log
+in `tb/`.
 
 ## Where things live
 
