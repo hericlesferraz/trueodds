@@ -411,6 +411,41 @@ Phase 3's job. Peak VRAM was the same for both (12.40 GiB reserved).
 
 ---
 
+## D26 — Ten trained phrasings per task, 2 epochs, best checkpoint by dev NLL
+*2026-09-23, amends D8 (3–5 phrasings) and the Phase 1 rule that `best` is chosen by dev accuracy*
+
+**What prompted it, stated plainly:** the harness report of `phase2-base`
+(`harness/results/2026-09-23-221918-eval.json`), which is a test and held-out result. It missed the
+Phase 2 exit criteria in two ways: accuracy on the held-out template was 12.4 points below the
+trained templates on MNLI and 4.6 on DBpedia-14 (limit 3), and ARC-Challenge's NLL was above the
+prior's (1.410 vs 1.384, ECE 0.19). The rule is that test numbers are read, never tuned against
+(D6). Nothing below is fitted to them: no number in this decision was chosen by looking at a test
+score, and the held-out templates stay unseen. But the direction of the change was chosen because of
+them, and the next run's test numbers are therefore less independent than the first run's were.
+
+**Decision:**
+1. **Ten trained phrasings per task** (`:0` to `:9` in `templates.py`), up from four. The six new
+   ones are used only by the trainer's per-epoch redraw (D23). Dev and test are rendered with `:0`
+   to `:3` only (`STABLE`), so their files are byte-identical to Phase 0's (checked: 34,929
+   templated dev and test rows re-render the same) and the two runs are compared on the same text.
+   A unit test forbids the new phrasings from using the words that make each held-out phrasing
+   distinctive (e.g. *claim* and *supported* for MNLI, *file* and *heading* for topics).
+2. **2 epochs, not 3.** From `phase2-base`'s dev curve alone: dev accuracy peaked in epoch 2 (0.776
+   at step 12,000) and epoch 3 only overfit (dev NLL 0.65 → 1.23, ECE 0.06 → 0.16).
+3. **`best` is chosen by dev NLL** (`select_by: nll`). Also from the dev curve: selecting by accuracy
+   took step 12,000 (ECE 0.063) over step 6,000 (ECE 0.008) for 1.8 points of accuracy. NLL scores
+   the probabilities, which are this project's product; accuracy scores only their argmax.
+
+**Why:** the MNLI confusion matrix shows the model reading a phrasing rather than the question: under
+the held-out phrasing, 748 of 1,772 true entailments become *maybe*, against 180 under the trained
+ones. Four phrasings per task are few enough to be recognized as a set; ten is meant to make the
+question's meaning the only thing that transfers. DBpedia-14's gap (predictions drifting to *Written
+work*) is on labels never trained on, and may not close. Points 2 and 3 address ARC-Challenge's
+overconfidence; whether they are enough, or temperature scaling in Phase 3 is needed as well, is what
+the run will show. Config: `configs/phase2-templates.yaml`.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

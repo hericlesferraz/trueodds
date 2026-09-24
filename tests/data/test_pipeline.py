@@ -1,10 +1,11 @@
+import re
 from collections import Counter
 
 import pytest
 
 from trueodds.data import pipeline as p
 from trueodds.data.schema import Example, load_examples, write_examples
-from trueodds.data.templates import TRAINED
+from trueodds.data.templates import STABLE, TEMPLATES, TRAINED, render
 
 
 def ex(i, *, source="ag_news", split="train", state=None, label=0, template_id="topic:0",
@@ -96,8 +97,36 @@ def test_assign_templates():
     first = p.assign_templates(test, seed=0)
     assert first == p.assign_templates(test, seed=123)  # stable by id, not by seed
     assert all(not e.template_id.endswith("heldout") for e in first)
+    # dev and test keep the Phase 0 phrasings, so their files do not change when training ones are added
+    assert {e.template_id for e in first} == {f"topic:{n}" for n in STABLE["topic"]}
     held = p.heldout_template_copy([*first, native(0, "Q?", split="test")])
     assert len(held) == 200 and {e.template_id for e in held} == {"topic:heldout"}
+
+
+# Words that make each held-out phrasing what it is. No trained phrasing may use them, or the
+# held-out template would no longer measure an unseen phrasing (D8, D26).
+HELDOUT_WORDS = {
+    "boolq": {"going", "only", "says"},
+    "mnli": {"claim", "support", "supported", "supports"},
+    "hellaswag": {"pick", "sentence", "finish", "finishes", "description"},
+    "topic": {"file", "heading", "under", "had"},
+}
+
+
+def test_trained_templates_do_not_borrow_the_heldout_words():
+    assert set(HELDOUT_WORDS) == set(TEMPLATES)
+    for task, banned in HELDOUT_WORDS.items():
+        for n in TRAINED[task]:
+            used = set(re.findall(r"[a-z]+", TEMPLATES[task][n].lower())) & banned
+            assert not used, f"{task}:{n} uses {used}"
+
+
+def test_every_template_renders():
+    vars_ = {"boolq": {"question": "Is the sky blue?"}, "mnli": {"hypothesis": "The cat sat."}}
+    for task, templates in TEMPLATES.items():
+        for n in templates:
+            question, template_id = render(task, n, vars_.get(task, {}))
+            assert template_id == f"{task}:{n}" and "{" not in question and question.strip()
 
 
 def test_mnli_template_rendering():

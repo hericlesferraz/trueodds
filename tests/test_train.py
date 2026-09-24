@@ -6,7 +6,7 @@ import yaml
 from tests.conftest import make_model
 from trueodds.data.schema import Example
 from trueodds.data.templates import TRAINED
-from trueodds.train import TrainConfig, fit, linear_schedule, resample_template
+from trueodds.train import TrainConfig, better, fit, linear_schedule, resample_template
 
 
 def test_schedule_warms_up_then_decays_to_zero():
@@ -35,7 +35,7 @@ def test_resampled_templates_are_trained_ones_and_keep_the_answer():
                  question="Does it follow that a man sleeps?", options=["yes", "maybe", "no"],
                  label_idx=0, template_id="mnli:0", vars={"hypothesis": "A man sleeps."})  # fmt: skip
     rng = random.Random(0)
-    seen = {resample_template(ex, rng).template_id for _ in range(50)}
+    seen = {resample_template(ex, rng).template_id for _ in range(300)}
     assert seen == {f"mnli:{n}" for n in TRAINED["mnli"]}
     again = resample_template(ex, rng)
     assert (again.options, again.label_idx, again.state) == (ex.options, ex.label_idx, ex.state)
@@ -65,3 +65,12 @@ def test_the_tiny_model_overfits_a_known_set(encoder):
     assert final["accuracy"] == 1.0
     assert final["nll"] < 0.05
     assert summary["history"][0]["train"]["nll"] > final["nll"]
+
+
+def test_best_checkpoint_follows_select_by():
+    a, b = {"accuracy": 0.78, "nll": 0.65}, {"accuracy": 0.76, "nll": 0.63}
+    assert better(a, b, TrainConfig(run="x")) and not better(b, a, TrainConfig(run="x"))
+    by_nll = TrainConfig(run="x", select_by="nll")
+    assert better(b, a, by_nll) and not better(a, b, by_nll)
+    with pytest.raises(ValueError, match="select_by"):
+        TrainConfig(run="x", select_by="ece")

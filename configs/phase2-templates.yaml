@@ -1,0 +1,19 @@
+# Phase 2, second full run (D26): ten trained phrasings per task instead of four, 2 epochs instead
+# of 3, and the best checkpoint chosen by dev NLL instead of dev accuracy. Otherwise as phase2-base.
+# Run with: uv run --extra gpu --extra tracking python -m trueodds.train configs/phase2-templates.yaml
+run: phase2-templates
+pooling: cls  # D25
+eval_sets: [dev]
+resample_templates: true
+lr: 3.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.06
+epochs: 2
+questions_per_step: 32
+max_tokens_per_microbatch: 16384
+grad_checkpointing: false
+tracking: mlflow  # D24; needs --extra tracking
+select_by: nll
+eval_every: 1000
+log_every: 50
+seed: 0

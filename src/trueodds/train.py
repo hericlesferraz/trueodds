@@ -6,7 +6,7 @@
     uv run --extra gpu --extra tracking python -m trueodds.train <config> --mlflow   # tracked (D24)
 
 fp32 weights under bf16 autocast, fused AdamW, linear warmup then linear decay. Every `eval_every`
-steps the eval sets are scored with the harness metrics; the best checkpoint by dev accuracy is
+steps the eval sets are scored with the harness metrics; the best checkpoint by dev `select_by` is
 kept in `<runs>/<run>/best/`, the final one in `last/`. Only train and dev are ever read here (D6).
 """
 
@@ -66,6 +66,7 @@ class TrainConfig:
     log_every: int = 10
     save: bool = True
     tracking: str = "none"  # "mlflow": log the run and register the best checkpoint (D24)
+    select_by: str = "accuracy"  # dev metric that picks `best`: "accuracy" (higher) or "nll" (D26)
     longest_first: bool = False
     seed: int = 0
 
@@ -74,6 +75,8 @@ class TrainConfig:
         if bad:
             # Test and held-out files are never read for any choice (D6).
             raise ValueError(f"eval_sets may only be {EVAL_SETS}; got {bad}")
+        if self.select_by not in ("accuracy", "nll"):
+            raise ValueError(f"select_by must be 'accuracy' or 'nll', not {self.select_by!r}")
         if self.tracking not in ("none", "mlflow"):
             raise ValueError(f"tracking must be 'none' or 'mlflow', not {self.tracking!r}")
         unknown = [s for s in self.sources if s not in TRAIN_SOURCES]
@@ -107,6 +110,13 @@ def resample_template(ex: Example, rng: random.Random) -> Example:
         raise ValueError(f"{ex.id}: the held-out template is never trained on (D8)")
     question, template_id = render(task, pick_random(task, rng), ex.vars)
     return replace(ex, question=question, template_id=template_id)
+
+
+def better(new: dict, old: dict, cfg: TrainConfig) -> bool:
+    """Whether dev metrics `new` beat `old` on `cfg.select_by`."""
+    if cfg.select_by == "nll":
+        return new["nll"] < old["nll"]
+    return new["accuracy"] > old["accuracy"]
 
 
 def linear_schedule(warmup: int, total: int) -> Callable[[int], float]:
@@ -260,9 +270,7 @@ def fit(
                     if isinstance(m, dict):
                         logger.scalars(step, {f"{name}/{k}": v for k, v in m.items() if k != "n"})
                 print(json.dumps(result))
-                if "dev" in result and (
-                    best is None or result["dev"]["accuracy"] > best["dev"]["accuracy"]
-                ):
+                if "dev" in result and (best is None or better(result["dev"], best["dev"], cfg)):
                     best = result
                     if run_dir and cfg.save:
                         model.save(run_dir / "best", encoder.tokenizer, cfg.max_len)

@@ -91,12 +91,14 @@ dataset (`Society & Culture`, …); DBpedia `Company`, `Educational institution`
 
 ## Templates (D8)
 
-Defined in `src/trueodds/data/templates.py`. Each templated task has 4 trained templates (`:0` to
-`:3`) and one held-out template (`:heldout`), which is never used in `train` or `dev`.
+Defined in `src/trueodds/data/templates.py`. Each templated task has 10 trained templates (`:0` to
+`:9`) and one held-out template (`:heldout`), which is never used in `train` or `dev`. `:4` to `:9`
+were added in Phase 2 (D26) and are used only by the trainer's redraw: `dev` and `test` are rendered
+with `:0` to `:3` only, so their files are the same as before.
 
 - `train`: the stored question uses a template drawn at random (seed 0); the trainer may redraw
   among the trained templates each epoch from `vars`.
-- `dev`, `test`: a trained template chosen by a hash of `id`, so it is the same in every run.
+- `dev`, `test`: one of `:0` to `:3` chosen by a hash of `id`, so it is the same in every run.
 - `test-heldout-template.jsonl`: the same rows as `test.jsonl`, rendered with `:heldout`. The
   harness reports its accuracy next to `test`'s.
 

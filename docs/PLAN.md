@@ -145,9 +145,21 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
 - On the held-out templates: accuracy within 3 points of the trained templates. A larger gap means
   the model reads a phrasing, not the question.
 
-**Status (2026-09-23): not met** by `phase2-base/best`. Accuracy passes on all 10 files. NLL is below
+**Status (2026-09-23): not met** by `phase2-base/best` (first run). Accuracy passes on all 10 files. NLL is below
 the prior on 9 of 10; ARC-Challenge fails (1.410 vs 1.384, ECE 0.19). The held-out template gap fails
 on MNLI (12.4 points) and DBpedia-14 (4.6).
+A second run follows D26: ten trained phrasings per task, 2 epochs, best checkpoint by dev NLL
+(`configs/phase2-templates.yaml`).
+
+**Met on 2026-09-24** by `phase2-templates/best` (step 6,000, end of epoch 1; dev accuracy 0.759, NLL
+0.621, ECE 0.012), `harness/results/2026-09-24-040715-eval.json`:
+- Accuracy above target and NLL below the prior on all 10 files. ARC-Challenge's NLL is now 1.237
+  (prior 1.384, ECE 0.058). Pooled test: accuracy 0.761, NLL 0.615, ECE 0.008.
+- Held-out template gap ≤ 1.4 points on every templated source: MNLI 12.4 → 1.1 (held-out accuracy
+  0.736 → 0.848), DBpedia-14 4.6 → 1.4.
+- The cost: test accuracy 1–3.5 points lower than `phase2-base` on BoolQ, ARC and MMLU, as the
+  checkpoint is from epoch 1. DBpedia-14's ECE rose to 0.144 (from 0.073) while every training
+  source's fell: a held-out dataset with its own miscalibration, for Phase 3.
 
 ---
 

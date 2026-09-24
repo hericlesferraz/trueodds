@@ -12,10 +12,10 @@ and calibration, meaning outcomes it gives 0.8 should happen about 80% of the ti
 
 Runs entirely on consumer hardware: RTX 5060 Ti 16 GB, 32 GB RAM, Ubuntu.
 
-**Status: Phase 1 done (2026-09-23).** The data (spec 001), the harness with its baselines
-(spec 002), the GPU measurements (`docs/SETUP.md`), the model and the training loop exist; the model
-overfits 200 examples and the Phase 2 settings peak at 13.1 GiB. Decisions run to D25. Phase 2 (full
-training) is in progress: runs are tracked in MLflow (D24).
+**Status: Phase 2 done (2026-09-24).** The data (spec 001), the harness with its baselines
+(spec 002), the GPU measurements (`docs/SETUP.md`), the model, the training loop and a trained model
+exist. `phase2-templates/best` meets every Phase 2 exit criterion (pooled test accuracy 0.761, ECE
+0.008); runs are tracked in MLflow (D24). Decisions run to D26. Next: Phase 3 (calibration).
 
 ## Project map
 

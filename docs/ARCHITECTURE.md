@@ -24,7 +24,7 @@ the plan starts from; each part is confirmed or changed by a measurement in the 
  │                          │                                                   │
  │   padded options: s_k = −inf     softmax over k     cross-entropy on label   │
  └──────────────────────────────────────────────────────────────────────────────┘
-        │  training: best checkpoint by dev accuracy        ~/.trueodds/runs/
+        │  training: best checkpoint by dev NLL (D26)       ~/.trueodds/runs/
         ▼
  temperature T, fitted on dev (Phase 3)  →  p_k = softmax(s_k / T)
         │
