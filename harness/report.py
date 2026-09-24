@@ -1,6 +1,7 @@
-"""Turn results JSONs (spec 002) into one markdown table.
+"""Turn results JSONs (spec 002) into markdown tables.
 
 uv run python -m harness.report harness/results/*-baselines.json harness/results/*-eval.json
+uv run python -m harness.report harness/results/<stamp>-calibration.json   # Phase 3, before/after
 """
 
 from __future__ import annotations
@@ -48,10 +49,60 @@ def table(paths: list[Path]) -> str:
     return "\n".join(lines)
 
 
+def _delta(before: float, after: float) -> str:
+    return f"{after - before:+.3f}"
+
+
+def calibration_tables(result: dict) -> str:
+    """Before/after ECE, NLL and Brier per file (training sources, then held-out apart) and ECE by K."""
+    t = result["temperature"]
+    before, after, change = result["before"], result["after"], result["ece_change"]
+    lines = [
+        f"T = {t['value']:.4f}, fitted on dev ({t['n']:,} questions from {len(t['sources'])} "
+        f"sources); dev NLL {t['dev_before']['nll']:.4f} -> {t['dev_after']['nll']:.4f}, "
+        f"dev ECE {t['dev_before']['ece']:.4f} -> {t['dev_after']['ece']:.4f}",
+        "",
+    ]
+    head = ["source/split", "n", "ECE before", "ECE after", "Δ ECE (95% CI)",
+            "NLL before", "NLL after", "Δ NLL", "Brier before", "Brier after"]  # fmt: skip
+    for role, title in (("train", "Training sources (test)"), ("heldout", "Held-out datasets")):
+        lines += [f"**{title}**", "", "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+        for key, entry in before.items():
+            if entry["role"] != role:
+                continue
+            b, a, c = entry["metrics"], after[key]["metrics"], change[key]
+            lo, hi = c["ci95"]
+            row = [key, str(b["n"]), _fmt(b["ece"]), _fmt(a["ece"]),
+                   f"{c['delta']:+.3f} ({lo:+.3f}, {hi:+.3f})", _fmt(b["nll"]), _fmt(a["nll"]),
+                   _delta(b["nll"], a["nll"]), _fmt(b["brier"]), _fmt(a["brier"])]  # fmt: skip
+            lines.append("| " + " | ".join(row) + " |")
+        lines.append("")
+
+    # ECE by K: pooled test (every K the model was trained on) and the held-out files apart.
+    lines += ["**ECE by number of options**", "",
+              "| set | K | n | ECE before | ECE after |", "|---|---|---|---|---|"]  # fmt: skip
+    groups = [("pooled/test", before["pooled/test"], after["pooled/test"])] + [
+        (key, entry, after[key]) for key, entry in before.items() if entry["role"] == "heldout"
+    ]
+    for key, b, a in groups:
+        for k, g in sorted(b["metrics"]["by_k"].items(), key=lambda kv: int(kv[0])):
+            ga = a["metrics"]["by_k"][k]
+            lines.append(f"| {key} | {k} | {g['n']} | {_fmt(g['ece'])} | {_fmt(ga['ece'])} |")
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="+", type=Path)
-    print(table(parser.parse_args().paths))
+    paths = parser.parse_args().paths
+    kinds = [json.loads(p.read_text()).get("kind") for p in paths]
+    others = [p for p, k in zip(paths, kinds, strict=True) if k != "calibration"]
+    if others:
+        print(table(others))
+    for p, k in zip(paths, kinds, strict=True):
+        if k == "calibration":
+            print(f"\n### Calibration: {p.name}\n")
+            print(calibration_tables(json.loads(p.read_text())))
 
 
 if __name__ == "__main__":

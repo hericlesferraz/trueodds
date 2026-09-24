@@ -193,12 +193,17 @@ def log_eval(result: dict, results_path: Path, checkpoint: Path, uri: str | None
         return False
     mlflow = setup(uri)
     values = {}
-    for key, entry in result["results"].items():
+    # A calibration result (Phase 3) logs its temperature and the calibrated numbers apart.
+    calibration = result.get("kind") == "calibration"
+    prefix = "harness_calibrated" if calibration else "harness"
+    if calibration:
+        values["temperature"] = result["temperature"]["value"]
+    for key, entry in result["after" if calibration else "results"].items():
         m = entry.get("metrics")
         if m:
-            values[f"harness/{key}/accuracy"] = m["accuracy"]
-            values[f"harness/{key}/nll"] = m["nll"]
-            values[f"harness/{key}/ece"] = m["ece"]
+            values[f"{prefix}/{key}/accuracy"] = m["accuracy"]
+            values[f"{prefix}/{key}/nll"] = m["nll"]
+            values[f"{prefix}/{key}/ece"] = m["ece"]
     with _in_run(mlflow, run_id):
         mlflow.log_artifact(str(results_path), "harness")
         mlflow.log_metrics({k: float(v) for k, v in values.items() if v is not None})

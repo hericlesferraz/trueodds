@@ -22,8 +22,25 @@ Per source and split (test for the training sources, the labelled split for the 
 | By template | Accuracy on the trained question phrasings and on the held-out one (D8) |
 | By K | ECE and accuracy by number of options |
 
-A reliability diagram (confidence against observed accuracy, per bin) is saved for the pooled test
-split and each held-out dataset.
+A trained checkpoint is scored at its fitted temperature when it has one (`temperature.json`,
+Phase 3); the eval JSON records the `temperature` it used.
+
+### Calibration (`harness/calibrate.py`, Phase 3)
+
+Fits one temperature on the pooled dev split and reports what it does on every test and held-out
+file (D27, spec 002). The checkpoint is scored once, and the scores are cached in the checkpoint
+directory, so the fit and both evaluations run from the same numbers:
+
+```bash
+uv run --extra gpu python -m harness.calibrate --checkpoint ~/.trueodds/runs/<run>/best
+uv run python -m harness.report harness/results/<stamp>-calibration.json     # before/after tables
+uv run --extra plots python -m harness.plots harness/results/<stamp>-calibration.json
+```
+
+The report gives ECE, NLL and Brier before and after per file, the held-out datasets in their own
+block, a paired bootstrap 95% interval on each ECE change, and ECE by number of options. The
+reliability diagrams (confidence against observed accuracy per bin, before and after on the same
+axes) are written for the pooled test split and each held-out dataset to `harness/results/figures/`.
 
 A trained checkpoint is scored with `--checkpoint` (Phase 1 added it); the model goes through
 `trueodds.predict.ModelPredictor`, which is a predictor like the baselines:

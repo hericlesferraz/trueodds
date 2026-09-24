@@ -158,6 +158,7 @@ def evaluate(
         "run": run,
         "checkpoint": checkpoint,
         "predictor": predictor.name if predictor else None,
+        "temperature": getattr(predictor, "temperature", None),  # set by a model predictor (D27)
         "data_stats_created": stats.get("created"),
         "results": results,
     }

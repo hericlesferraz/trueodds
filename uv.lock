@@ -1995,6 +1995,9 @@ gpu = [
     { name = "nvidia-ml-py" },
     { name = "tensorboard" },
 ]
+plots = [
+    { name = "matplotlib" },
+]
 tracking = [
     { name = "mlflow" },
 ]
@@ -2008,6 +2011,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "datasets", specifier = ">=3.0" },
+    { name = "matplotlib", marker = "extra == 'plots'", specifier = ">=3.9" },
     { name = "mlflow", marker = "extra == 'tracking'", specifier = ">=3.16" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "nvidia-ml-py", marker = "extra == 'gpu'", specifier = ">=12.0" },
@@ -2018,7 +2022,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.8", index = "https://download.pytorch.org/whl/cu128" },
     { name = "transformers", specifier = ">=4.48" },
 ]
-provides-extras = ["gpu", "tracking"]
+provides-extras = ["gpu", "tracking", "plots"]
 
 [package.metadata.requires-dev]
 dev = [

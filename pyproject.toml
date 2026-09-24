@@ -21,6 +21,8 @@ dependencies = [
 gpu = ["nvidia-ml-py>=12.0", "tensorboard>=2.17"]
 # Run tracking and the model registry (D24), local only: `uv run --extra tracking ...`.
 tracking = ["mlflow>=3.16"]
+# Reliability diagrams as PNGs (Phase 3): `uv run --extra plots python -m harness.plots ...`.
+plots = ["matplotlib>=3.9"]
 
 [dependency-groups]
 dev = ["pytest>=8.2", "ruff>=0.6"]

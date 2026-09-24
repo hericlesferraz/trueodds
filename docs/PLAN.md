@@ -9,7 +9,7 @@ once Phase 0 produces the baselines.
 | 0 ✓ | Environment, data and harness, no training | ModernBERT runs in bf16 on this GPU; every dataset is converted with counts per split; the harness scores accuracy, ECE, NLL and Brier and reports the baselines on test and held-out; throughput is measured |
 | 1 ✓ | Model and training loop, proved on a tiny set | The model overfits 200 examples; option masking, truncation and permutation are proved by tests |
 | 2 | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
-| 3 | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
+| 3 ✓ | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
 | 4 | Inference (v1) | `predict()` answers in tens of milliseconds, and many questions about one state are measured as a batch |
 | 5 | Experiments (after v1) | Each one is a run compared with the v1 report |
 
@@ -166,19 +166,36 @@ A second run follows D26: ten trained phrasings per task, 2 epochs, best checkpo
 ## Phase 3 — Calibration
 
 **Tasks**
-- [ ] Fit one temperature on the dev split (all training sources together) by minimizing NLL.
-- [ ] Report ECE, NLL and Brier before and after, per source, on test and on held-out.
-- [ ] Reliability diagrams before and after, for the pooled test split and for each held-out
-      dataset.
-- [ ] Report ECE by number of options (2, 3, 4, 5, 10, 14), since one temperature is shared by
-      questions with very different K (D7).
+- [x] Fit one temperature on the dev split (all training sources together) by minimizing NLL.
+      *`trueodds/calibrate.py`, `harness/calibrate.py` (D27): T = 1.0576 on 11,286 dev questions;
+      dev NLL 0.6206 → 0.6198, dev ECE 0.0121 → 0.0091. Written to `best/temperature.json`.*
+- [x] Report ECE, NLL and Brier before and after, per source, on test and on held-out.
+      *`harness/results/2026-09-24-110652-calibration.json`, `harness.report` renders it; each ECE
+      change comes with a paired bootstrap 95% interval.*
+- [x] Reliability diagrams before and after, for the pooled test split and for each held-out
+      dataset. *`harness/results/figures/2026-09-24-110652-reliability-{pooled,commonsense_qa,dbpedia}.png`.*
+- [x] Report ECE by number of options (2, 3, 4, 5, 10, 14), since one temperature is shared by
+      questions with very different K (D7). *In the same report.*
 
 **Exit criteria**
 - ECE after temperature scaling is lower than before on the pooled test split.
 - On the held-out datasets, the effect is reported whether it helps or not: the question is whether
   a temperature fitted on seen data transfers to unseen data.
 
----
+**Met on 2026-09-24, with a caveat on the first criterion.** `phase2-templates/best`, T = 1.0576:
+- Pooled test ECE 0.0077 → 0.0069 (NLL 0.615 → 0.614, accuracy unchanged at 0.761). The criterion
+  is met as written, but the change is **within noise**: its 95% interval is −0.0048 to +0.0045.
+  The model was already calibrated in-domain (D26's selection by dev NLL did most of this phase's
+  work), so a dev-fitted T close to 1 has almost nothing left to fix. Per source the change is
+  mixed: BoolQ, ARC-Challenge and HellaSwag improve, MNLI, ARC-Easy and AG News get slightly worse,
+  as one T cannot move 2-option and 10-option questions the same way (by K: K = 2 0.037 → 0.028,
+  K = 3 0.007 → 0.013, K = 4 0.012 → 0.010, K = 10 0.016 → 0.019).
+- **Held-out: the temperature does not transfer, and on DBpedia-14 it makes things worse.**
+  DBpedia-14's ECE 0.144 → 0.166 (interval +0.020 to +0.023; held-out template 0.169 → 0.194). The
+  model is *under*confident there (confidence 0.50 → accuracy 0.70), and a T > 1 softens it further.
+  CommonsenseQA: 0.036 → 0.038, within noise. The miscalibration on unseen data runs the opposite
+  way from the small correction seen data asks for, so one global temperature fitted in-domain
+  cannot fix it. This answers D27's open question: one temperature does not fit all.
 
 ## Phase 4 — Inference (v1)
 

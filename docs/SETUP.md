@@ -199,3 +199,8 @@ curves and registered version 2 by itself. A version is 573 MB of artifacts, the
 - Loading `ModernBertModel` from the checkpoint reports `decoder.bias`, `head.dense.weight` and
   `head.norm.weight` as unexpected: those belong to the masked-LM head, which the encoder does not
   use.
+- **`uv sync --extra <one>` uninstalls every other extra.** `uv sync` makes the venv match exactly
+  what it was asked for, so `uv sync --extra plots` removes mlflow and tensorboard, even under a
+  running job that imports them later. Sync all the extras you use at once
+  (`uv sync --extra gpu --extra tracking --extra plots`), or rely on `uv run --extra <x>`, which
+  adds what is missing and removes nothing.

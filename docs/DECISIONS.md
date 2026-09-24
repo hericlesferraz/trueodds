@@ -446,6 +446,40 @@ the run will show. Config: `configs/phase2-templates.yaml`.
 
 ---
 
+## D27 — One temperature, fitted on pooled dev by NLL, kept next to the weights
+*2026-09-24, Phase 3*
+
+**Decision:**
+- **One T** for every source and every K, the plan's starting point. p = softmax(s / T).
+- **Fitted on the pooled dev files** of the eight training sources (11,286 questions) by
+  minimizing the mean NLL, with LBFGS over log T in float64. Padded options are masked after the
+  division by T, because a −∞ score divided by T gives a NaN gradient. Nothing is fitted on test
+  or on a held-out dataset (D6).
+- **Stored as `<checkpoint>/temperature.json`** (T, the sources, n, dev metrics before and after),
+  never folded into the weights or the head. `ModelPredictor.load` applies it, so
+  `harness.evaluate --checkpoint` and Phase 4's `predict()` use it without a flag;
+  `temperature=False` gives the raw model.
+- **Scores once, temperatures after.** `harness.calibrate` runs the checkpoint once over dev and
+  every evaluation file and caches the scores in `<checkpoint>/scores.npz` (not committed, D12).
+  The fit, the before (T = 1) and after evaluations and the bootstrap all run from that cache
+  through `harness.evaluate`, so before and after differ by T alone.
+- **A paired bootstrap interval** (1,000 resamples, seed 0) is reported with every ECE change,
+  and one file (`<stamp>-calibration.json`, spec 002) holds the fit, before, after and intervals.
+
+**Why:** NLL is a proper scoring rule and smooth in T; ECE depends on binning and would be a noisy
+thing to fit. Keeping T out of the weights keeps the Phase 2 checkpoint as it was, and lets the same
+checkpoint be scored with and without it. The bootstrap is there because the Phase 2 model is
+already calibrated in-domain (pooled test ECE 0.008 before this phase): a change that small has to
+come with its noise, or "ECE went down" says nothing.
+
+**Result** (`harness/results/2026-09-24-110652-calibration.json`): T = 1.0576. Pooled test ECE 0.0077
+→ 0.0069, within noise (95% interval −0.0048 to +0.0045). DBpedia-14, underconfident on K = 14,
+gets worse (0.144 → 0.166). CommonsenseQA does not change beyond noise. The Phase 3 criterion is met
+as written. The finding is that a temperature fitted in-domain does not transfer to the held-out
+data.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,
@@ -457,5 +491,9 @@ the run will show. Config: `configs/phase2-templates.yaml`.
   not just better than chance.
 - **Contamination of the backbone.** ModernBERT's pretraining data may include these datasets'
   text. That cannot be checked, only stated.
-- **Does one temperature fit all?** If ECE by K differs widely after Phase 3, a temperature per K or
-  per task type is the next step.
+- **Does one temperature fit all?** *Answered by Phase 3 (D27): no.* In-domain, ECE by K moves in
+  both directions under the one T (K = 2 improves, K = 3 and 10 get worse), and DBpedia-14 (K = 14,
+  never trained) is underconfident while dev asks for a T slightly above 1. A temperature per K
+  cannot be fitted for K = 14 from dev, which has no 14-option questions. What is left open is
+  whether underconfidence on unseen label sets comes from K itself (more options spreading the
+  probability) or from the new labels. A Phase 5 experiment could separate the two.

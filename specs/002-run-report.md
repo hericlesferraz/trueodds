@@ -16,6 +16,7 @@ a claim in the README.
   "run": "phase2-base-cls",            // the run's name, null for baselines
   "checkpoint": "step-12000",           // null for baselines
   "predictor": "modernbert-cross-encoder",
+  "temperature": 1.0,                   // the model's T (D27); null for baselines, 1.0 when none fitted
   "data_stats_created": "2026-09-23T12:40:05",   // ties the result to one build of the data
   "results": {
     "<source>/<file>": {
@@ -68,6 +69,38 @@ than it would get in practice, which makes it a stricter bar.
 | majority | all the probability on the most frequent label: its **text** when every question has the same options (yes/no, topic labels), else its **index** (ties go to the smallest) | uniform when that label is not among a question's options; NLL is near −log 1e-12 and only shows that a sure guess is heavily penalized |
 | prior | the label frequencies (by text or by index as above), +1 smoothing, renormalized over the question's options | knows how often each answer is right but reads no text. Its NLL and Brier are the bar a model must pass on calibration; its ECE is near 0 on its fit set, which is why ECE alone is not enough (D7) |
 
+## Calibration results (Phase 3)
+
+`harness/results/YYYY-MM-DD-HHMMSS-calibration.json`, written by `harness/calibrate.py` (D27). One
+file holds the whole before/after comparison, so the claim and its evidence cannot drift apart.
+
+```json
+{
+  "kind": "calibration",
+  "created": "...", "run": "phase2-templates", "checkpoint": "best",
+  "predictor": "model:phase2-templates/best", "data_stats_created": "...",
+  "temperature": {
+    "value": 1.03, "fit_on": "dev", "sources": ["boolq", ...], "n": 11286,
+    "dev_before": {"accuracy", "ece", "nll", "brier"},    // at T = 1
+    "dev_after":  {"accuracy", "ece", "nll", "brier"}     // at the fitted T
+  },
+  "before": { "<source>/<file>": {...}, "pooled/test": {...} },   // the `results` of an eval at T = 1
+  "after":  { ... },                                              // the same at the fitted T
+  "ece_change": { "<source>/<file>": {"delta": -0.002, "ci95": [-0.004, 0.000], "n_boot": 1000}, ... }
+}
+```
+
+- **Temperature:** p = softmax(s / T) over a question's scores s. T minimizes the mean NLL over
+  the pooled `dev` files of the training sources, and nothing else. It is written to
+  `<checkpoint>/temperature.json`, which `ModelPredictor.load` applies.
+- **`before` and `after`** are computed from the same cached scores through `harness.evaluate`,
+  so they differ only by T. Accuracy is identical in both: dividing by T > 0 does not change the
+  order of the options.
+- **`ece_change`:** delta = ECE_after − ECE_before on that file. ci95 is the 2.5th and 97.5th
+  percentile of the same difference over `n_boot` paired resamples of the file's questions (drawn
+  with replacement, seed 0; the same resample scores both). An interval that contains 0 means the
+  change is within sampling noise.
+
 ## Acceptance
 
 - `tests/test_metrics.py` checks known answers: a perfect model (accuracy 1, ECE 0, NLL 0,
@@ -76,3 +109,7 @@ than it would get in practice, which makes it a stricter bar.
   majority share).
 - `tests/test_evaluate.py` checks the baselines, the file, the pooled set and the table on a small
   fixture data directory, and that an oracle predictor scores accuracy 1 everywhere.
+- `tests/test_calibrate.py` checks the temperature fit on known answers (labels drawn from
+  softmax(z / T0) give back T0, with mixed K and padding), that the fit never raises its own NLL,
+  that a checkpoint's `temperature.json` is applied, that the vectorized ECE of the bootstrap
+  equals `metrics.ece`, and the calibration file end to end on the fixture data directory.

@@ -12,10 +12,12 @@ and calibration, meaning outcomes it gives 0.8 should happen about 80% of the ti
 
 Runs entirely on consumer hardware: RTX 5060 Ti 16 GB, 32 GB RAM, Ubuntu.
 
-**Status: Phase 2 done (2026-09-24).** The data (spec 001), the harness with its baselines
-(spec 002), the GPU measurements (`docs/SETUP.md`), the model, the training loop and a trained model
-exist. `phase2-templates/best` meets every Phase 2 exit criterion (pooled test accuracy 0.761, ECE
-0.008); runs are tracked in MLflow (D24). Decisions run to D26. Next: Phase 3 (calibration).
+**Status: Phase 3 done (2026-09-24).** The data (spec 001), the harness with its baselines
+(spec 002), the GPU measurements (`docs/SETUP.md`), the model, the training loop, a trained model
+and its temperature exist. `phase2-templates/best` meets every Phase 2 exit criterion (pooled test
+accuracy 0.761). A temperature fitted on dev (T = 1.058, D27) lowers pooled test ECE only within
+noise (0.0077 → 0.0069) and makes the held-out DBpedia-14 worse (0.144 → 0.166). Runs are tracked in
+MLflow (D24). Decisions run to D27. Next: Phase 4 (inference).
 
 ## Project map
 
@@ -75,6 +77,7 @@ uv run pytest                             # unit tests, model tests on the CPU (
 uv run ruff check . && uv run ruff format --check .
 uv run --extra gpu <cmd>                  # training and GPU tools (tensorboard, nvidia-ml-py)
 uv run --extra tracking <cmd>             # MLflow tracking and registry (D24)
+uv run --extra plots <cmd>                # matplotlib, for the reliability diagrams
 
 uv run python scripts/prepare_data.py     # download and convert every dataset to ~/.trueodds/data
 uv run python -m harness.evaluate --baselines
@@ -82,6 +85,9 @@ uv run python -m harness.report harness/results/*-baselines.json
 uv run --extra gpu python scripts/gpu_bench.py
 uv run --extra gpu python -m trueodds.train configs/<run>.yaml          # checkpoints in ~/.trueodds/runs/
 uv run --extra gpu python -m harness.evaluate --checkpoint ~/.trueodds/runs/<run>/best
+uv run --extra gpu python -m harness.calibrate --checkpoint ~/.trueodds/runs/<run>/best  # fit T (D27)
+uv run python -m harness.report harness/results/<stamp>-calibration.json
+uv run --extra plots python -m harness.plots harness/results/<stamp>-calibration.json   # diagrams
 uv run --extra tracking mlflow ui --backend-store-uri sqlite:///$HOME/.trueodds/mlflow.db
 ```
 

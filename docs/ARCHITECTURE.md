@@ -26,7 +26,7 @@ the plan starts from; each part is confirmed or changed by a measurement in the 
  └──────────────────────────────────────────────────────────────────────────────┘
         │  training: best checkpoint by dev NLL (D26)       ~/.trueodds/runs/
         ▼
- temperature T, fitted on dev (Phase 3)  →  p_k = softmax(s_k / T)
+ temperature T, fitted on dev (Phase 3, D27)  →  p_k = softmax(s_k / T)   <checkpoint>/temperature.json
         │
         ▼
  harness: accuracy, ECE, NLL, Brier, baselines   →   harness/results/*.json   (spec 002)
@@ -105,13 +105,16 @@ as five yes/no questions, so the micro-batch is sized in padded tokens, not ques
 | `trueodds/model.py` | `DecisionModel`: encoder, pooling (CLS or mean), linear head, masked scores; save and load |
 | `trueodds/batching.py` | steps, token-budget micro-batches, collation (D22) |
 | `trueodds/train.py` | the training loop, one YAML config per run |
-| `trueodds/predict.py` | `ModelPredictor`, the harness `Predictor` for a checkpoint |
+| `trueodds/predict.py` | `ModelPredictor`, the harness `Predictor` for a checkpoint; scores, and probabilities at the checkpoint's temperature |
+| `trueodds/calibrate.py` | fitting the temperature by NLL and writing `temperature.json` (D27) |
 | `trueodds/tracking.py` | MLflow runs, registering and promoting versions, mirroring harness results (D24) |
 | `trueodds/mlflow_model.py` | the checkpoint as an MLflow pyfunc model (rows of state, question, options → probabilities) |
 
 A checkpoint directory (`~/.trueodds/runs/<run>/best/` and `last/`) holds `model.safetensors`, the
 encoder's `config.json`, `model.json` (backbone, pooling, max length) and the tokenizer, so it loads
-without the Hub. The run directory also holds `config.yaml`, `summary.json` and the TensorBoard log
+without the Hub. After Phase 3, `best/` also holds `temperature.json` (T and how it was fitted),
+which `ModelPredictor.load` applies, and `scores.npz`, the cached scores `harness.calibrate` fits
+and evaluates from (D27). The weights themselves are never changed by calibration. The run directory also holds `config.yaml`, `summary.json` and the TensorBoard log
 in `tb/`.
 
 ## Where things live
@@ -119,7 +122,7 @@ in `tb/`.
 | What | Where | In git |
 |---|---|---|
 | Converters, model, training, inference | `src/trueodds/` | yes |
-| Evaluations and their results | `harness/`, `harness/results/*.json` | yes |
+| Evaluations and their results | `harness/`, `harness/results/*.json`, `harness/results/figures/*.png` | yes |
 | Run settings | `configs/*.yaml` | yes |
 | Downloaded and processed data | `~/.trueodds/data/` | no (D12) |
 | Checkpoints and TensorBoard logs | `~/.trueodds/runs/` | no (D12) |
