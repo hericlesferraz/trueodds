@@ -22,7 +22,7 @@ def make_tokenizer():
     )
 
 
-def make_model(pooling="cls", seed=0):
+def make_model(pooling="cls", seed=0, architecture="cross"):
     import torch
     from transformers import ModernBertConfig
 
@@ -43,7 +43,7 @@ def make_model(pooling="cls", seed=0):
         eos_token_id=3,
         initializer_range=0.5,
     )
-    model = DecisionModel.from_config(config, pooling)
+    model = DecisionModel.from_config(config, pooling, architecture=architecture)
     # The default init gives near-equal scores, so every question would get ~1/K and a test of
     # "the probabilities follow the options" could pass by accident. A wider head spreads them.
     torch.nn.init.normal_(model.head.weight, std=1.0)

@@ -2,7 +2,7 @@
 
     uv run --extra gpu python -m trueodds.train configs/phase1-overfit.yaml
     uv run --extra gpu python -m trueodds.train configs/phase2-base.yaml --max-steps 50 \
-        --longest-first --no-eval                           # the VRAM probe
+        --longest-first --no-eval --no-tracking             # the VRAM probe
     uv run --extra gpu --extra tracking python -m trueodds.train <config> --mlflow   # tracked (D24)
 
 fp32 weights under bf16 autocast, fused AdamW, linear warmup then linear decay. Every `eval_every`
@@ -28,13 +28,14 @@ import yaml
 
 from harness import metrics
 from trueodds import paths
-from trueodds.batching import collate, plan_epoch, split_microbatches
+from trueodds.batching import plan_epoch, split_microbatches
 from trueodds.data.converters import SOURCES
 from trueodds.data.schema import Example, load_examples
 from trueodds.data.templates import HELDOUT, pick_random, render
 from trueodds.encode import BACKBONE, Encoder
-from trueodds.model import DecisionModel
-from trueodds.predict import predict_probs
+from trueodds.model import ARCHITECTURES, DecisionModel
+from trueodds.predict import ENCODERS, predict_probs
+from trueodds.shared import SharedEncoder
 
 TRAIN_SOURCES = [name for name, s in SOURCES.items() if s.role == "train"]
 EVAL_SETS = ("train", "dev")  # "train" is the training subset itself, scored as stored
@@ -45,6 +46,7 @@ GIB = 1024**3
 class TrainConfig:
     run: str
     backbone: str = BACKBONE
+    architecture: str = "cross"  # "shared": the state encoded once (D13, spec 004)
     pooling: str = "cls"
     attn: str = "sdpa"
     max_len: int = 512
@@ -77,6 +79,8 @@ class TrainConfig:
             raise ValueError(f"eval_sets may only be {EVAL_SETS}; got {bad}")
         if self.select_by not in ("accuracy", "nll"):
             raise ValueError(f"select_by must be 'accuracy' or 'nll', not {self.select_by!r}")
+        if self.architecture not in ARCHITECTURES:
+            raise ValueError(f"architecture must be one of {ARCHITECTURES}")
         if self.tracking not in ("none", "mlflow"):
             raise ValueError(f"tracking must be 'none' or 'mlflow', not {self.tracking!r}")
         unknown = [s for s in self.sources if s not in TRAIN_SOURCES]
@@ -143,7 +147,7 @@ def param_groups(model: torch.nn.Module, weight_decay: float) -> list[dict]:
 
 
 def evaluate_sets(
-    model: DecisionModel, encoder: Encoder, eval_sets: dict[str, list[Example]]
+    model: DecisionModel, encoder: Encoder | SharedEncoder, eval_sets: dict[str, list[Example]]
 ) -> dict[str, dict]:
     out = {}
     for name, examples in eval_sets.items():
@@ -180,7 +184,7 @@ class Logger:
 
 def fit(
     model: DecisionModel,
-    encoder: Encoder,
+    encoder: Encoder | SharedEncoder,
     train: Sequence[Example],
     eval_sets: dict[str, list[Example]],
     cfg: TrainConfig,
@@ -197,7 +201,7 @@ def fit(
     logger = Logger(run_dir / "tb" if run_dir else None, tracker)
 
     lengths = encoder.lengths(train)
-    ks = [ex.k for ex in train]
+    ks = [encoder.n_sequences(ex) for ex in train]  # a packed question is one sequence
     steps_per_epoch = math.ceil(len(train) / cfg.questions_per_step)
     total = cfg.max_steps or math.ceil(cfg.epochs * steps_per_epoch)
     warmup = round(cfg.warmup_ratio * total)
@@ -229,11 +233,13 @@ def fit(
                 examples = [resample_template(ex, rng) for ex in examples]
             items = encoder.encode(examples)
             mbs = split_microbatches(
-                [e.length for e in items], [e.k for e in items], cfg.max_tokens_per_microbatch
+                [e.length for e in items],
+                [e.n_sequences for e in items],
+                cfg.max_tokens_per_microbatch,
             )
             step_loss = 0.0
             for mb in mbs:
-                batch = collate([items[i] for i in mb], encoder.pad).to(device)
+                batch = encoder.collate([items[i] for i in mb]).to(device)
                 with torch.autocast(device.type, dtype=torch.bfloat16, enabled=cuda):
                     scores = model(**batch.model_inputs())
                 loss = F.cross_entropy(scores, batch.labels, reduction="sum") / len(items)
@@ -307,6 +313,7 @@ def main() -> None:
     parser.add_argument("--no-eval", action="store_true", help="no evaluation, no checkpoints")
     parser.add_argument("--run", help="override the run name")
     parser.add_argument("--mlflow", action="store_true", help="track the run in MLflow (D24)")
+    parser.add_argument("--no-tracking", action="store_true", help="no MLflow, e.g. for a probe")
     parser.add_argument("--data-dir", type=Path, default=paths.DATA)
     args = parser.parse_args()
 
@@ -322,6 +329,8 @@ def main() -> None:
         overrides["run"] = args.run
     if args.mlflow:
         overrides["tracking"] = "mlflow"
+    if args.no_tracking:
+        overrides["tracking"] = "none"
     cfg = replace(cfg, **overrides)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -329,14 +338,15 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.yaml").write_text(yaml.safe_dump(dataclasses.asdict(cfg), sort_keys=False))
 
-    encoder = Encoder.from_pretrained(cfg.backbone, cfg.max_len)
+    encoder = ENCODERS[cfg.architecture].from_pretrained(cfg.backbone, cfg.max_len)
     train = load_split(cfg, "train", cfg.train_limit, args.data_dir)
     eval_sets: dict[str, list[Example]] = {}
     for name in cfg.eval_sets:
         # "train" re-reads the same sampled subset, with the stored (not re-sampled) questions.
         limit = cfg.train_limit if name == "train" else cfg.eval_limit
         eval_sets[name] = load_split(cfg, name, limit, args.data_dir)
-    model = DecisionModel.from_pretrained(cfg.backbone, cfg.pooling, cfg.attn).to(device)
+    model = DecisionModel.from_pretrained(cfg.backbone, cfg.pooling, cfg.attn, cfg.architecture)
+    model = model.to(device)
 
     tracker = None
     (run_dir / "mlflow.json").unlink(

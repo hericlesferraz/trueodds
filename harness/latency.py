@@ -166,6 +166,7 @@ def env(model: TrueOdds) -> dict:
         "torch": torch.__version__,
         "transformers": transformers.__version__,
         "attention": model.predictor.model.encoder.config._attn_implementation,
+        "architecture": model.predictor.model.architecture,  # spec 004: "shared" packs a batch
         "weights": str(next(model.predictor.model.parameters()).dtype).removeprefix("torch."),
         "autocast": "bfloat16" if device.type == "cuda" else None,
     }

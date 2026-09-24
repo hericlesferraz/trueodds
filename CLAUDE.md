@@ -31,7 +31,7 @@ docs/
   DECISIONS.md          # what was decided and why, plus open questions
   SETUP.md              # verified install steps, measurements and workarounds
   LICENSES.md           # dataset and model licenses
-specs/                  # contracts for non-obvious interfaces, written when a phase starts
+specs/                  # contracts for non-obvious interfaces, written when a phase starts (001–004)
 harness/                # evaluations: accuracy, zero-shot, calibration, latency; results/ holds the JSONs
 configs/                # one YAML per training run (Phase 1)
 src/trueodds/           # the package: data converters, model, training, inference (trueodds.load)
@@ -83,13 +83,14 @@ uv run --extra plots <cmd>                # matplotlib, for the reliability diag
 uv run python scripts/prepare_data.py     # download and convert every dataset to ~/.trueodds/data
 uv run python -m harness.evaluate --baselines
 uv run python -m harness.report harness/results/*-baselines.json
-uv run --extra gpu python scripts/gpu_bench.py
+uv run --extra gpu python scripts/gpu_bench.py                  # --backbone answerdotai/ModernBERT-large
 uv run --extra gpu python -m trueodds.train configs/<run>.yaml          # checkpoints in ~/.trueodds/runs/
 uv run --extra gpu python -m harness.evaluate --checkpoint ~/.trueodds/runs/<run>/best
 uv run --extra gpu python -m harness.calibrate --checkpoint ~/.trueodds/runs/<run>/best  # fit T (D27)
 uv run python -m harness.report harness/results/<stamp>-calibration.json
 uv run --extra plots python -m harness.plots harness/results/<stamp>-calibration.json   # diagrams
 uv run --extra gpu python -m harness.latency                             # predict() latency (spec 003)
+uv run python -m harness.compare --b ~/.trueodds/runs/<run>/best         # B against v1, paired CIs (Phase 5)
 uv run --extra tracking mlflow ui --backend-store-uri sqlite:///$HOME/.trueodds/mlflow.db
 ```
 

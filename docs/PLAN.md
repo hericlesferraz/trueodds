@@ -232,12 +232,62 @@ A second run follows D26: ten trained phrasings per task, 2 epochs, best checkpo
 
 ## Phase 5 — Experiments (after v1)
 
-Each experiment is one run, compared with the v1 report by the same harness.
+Each experiment is one run, compared with the v1 report by the same harness. The rules of the
+earlier phases hold: checkpoint and temperature chosen on dev only (D6), peak VRAM measured under
+15 GB, results JSONs committed, a dated decision for each outcome. An experiment is done when its
+result is measured and reported, whether it beats v1 or not. The first two are planned in tasks
+below; the score head and the distilled labels get their tasks when they start, since each needs
+a dataset chosen first.
 
-- **ModernBERT-large** instead of base, at the same settings.
-- **Shared state encoding** (D13): encode the state once and score every option and question
-  against it, closer to how Jev answers many questions about one state in one pass. Compared on
-  accuracy, calibration and the batch latency of Phase 4.
+### 5A — ModernBERT-large (D3)
+
+Large instead of base, at v1's settings (`configs/phase2-templates.yaml`): same optimizer step of
+32 questions, only the micro-batch budget changed to fit memory, which D22 makes
+gradient-equivalent.
+
+**Tasks**
+- [ ] `scripts/gpu_bench.py --backbone`: the largest -large micro-batch under 15 GiB at 128, 256
+      and 512 tokens, with and without gradient checkpointing; in `docs/SETUP.md`.
+- [ ] `configs/phase5-large.yaml`; the longest-first VRAM probe (50 steps) under 15 GiB.
+- [ ] Full run, then `harness.evaluate`, `harness.calibrate`, `harness.plots` and
+      `harness.latency` on its best checkpoint.
+- [x] `harness.report` shows a run next to v1, with a paired bootstrap 95% interval on the pooled
+      test accuracy difference. *`harness/compare.py` (B − A in accuracy, NLL and ECE per file and
+      pooled, each at its checkpoint's T, from the scores `harness.calibrate` caches);
+      `tests/test_compare.py`.*
+
+**Exit criteria**
+- Every test and held-out file, the held-out template gap, ECE before and after its temperature,
+  and latency, reported next to v1 (`phase2-templates/best`).
+- The pooled test accuracy difference with its interval, so "large is better" is a measured claim.
+
+### 5B — Shared state encoding (D13)
+
+Encode the state once and score every question and option against it, closer to how Jev answers
+many questions about one state in one pass. One packed sequence holds the state, then each
+question with its options; a mask keeps questions and options from seeing each other, so a
+question scores the same alone or packed with others (`specs/004-shared-state.md`).
+
+**Tasks**
+- [x] `specs/004-shared-state.md`: sequence layout, attention masks, positions, pooling,
+      truncation, checkpoint format.
+- [x] The packed encoding, masks and model, with known answers proved by unit tests: a question
+      scores the same alone and packed, permuting options permutes probabilities, padded options
+      get 0, no option sees another. *`src/trueodds/shared.py`, `tests/test_shared.py` (12 tests);
+      with every token in the state the masks give ModernBERT's own hidden states.*
+- [ ] `configs/phase5-shared.yaml` at v1 settings; the VRAM probe; full run; evaluate, calibrate,
+      plots and latency as for 5A.
+- [x] `predict_batch` packs all questions about one state into one sequence. *`pack=True` through
+      `predict.predict_scores`, the harness's path; tested equal to `predict` one by one.*
+
+**Exit criteria**
+- Accuracy and calibration reported next to v1, with the pooled accuracy difference and its
+  interval: this is what giving the state no view of the question costs.
+- The Phase 4 batch timings measured again. Target: 50 questions about a 256-token state faster
+  than v1 answering them one by one (1.27 s).
+
+### Later
+
 - **Score head:** a numeric answer (regression) as a third kind of output, with its own metric and
   a dataset to train it.
 - **Distilled labels for an own domain:** a local LLM labels questions about states of a domain

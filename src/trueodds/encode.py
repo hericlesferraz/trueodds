@@ -7,10 +7,14 @@ tokenizer is needed here, not torch, so the truncation is tested on its own.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from trueodds.data.pipeline import MAX_TOKENS, SPECIAL_TOKENS
 from trueodds.data.schema import Example
+
+if TYPE_CHECKING:
+    from trueodds.batching import Batch
 
 BACKBONE = "answerdotai/ModernBERT-base"
 
@@ -36,10 +40,19 @@ class Encoded:
 
     sequences: list[list[int]]
     label_idx: int
+    questions: list[int] = field(default_factory=lambda: [0])  # its position in `encode`'s input
 
     @property
     def k(self) -> int:
         return len(self.sequences)
+
+    @property
+    def ks(self) -> list[int]:
+        return [self.k]
+
+    @property
+    def n_sequences(self) -> int:
+        return self.k
 
     @property
     def length(self) -> int:
@@ -47,6 +60,8 @@ class Encoded:
 
 
 class Encoder:
+    architecture = "cross"
+
     def __init__(self, tokenizer, max_len: int = MAX_TOKENS) -> None:
         self.tokenizer = tokenizer
         self.max_len = max_len
@@ -65,7 +80,9 @@ class Encoder:
             return []
         return self.tokenizer(texts, add_special_tokens=False)["input_ids"]
 
-    def encode(self, examples: Sequence[Example]) -> list[Encoded]:
+    def encode(self, examples: Sequence[Example], pack: bool = False) -> list[Encoded]:
+        """One `Encoded` per question; `pack` is for the shared-state encoder and changes nothing
+        here, since every option sequence repeats the state anyway."""
         states = self._tokenize([ex.state for ex in examples])
         questions = self._tokenize([ex.question for ex in examples])
         unique = sorted({o for ex in examples for o in ex.options})
@@ -74,9 +91,18 @@ class Encoder:
             Encoded(
                 [build_ids(s, q, options[o], self.cls, self.sep, self.max_len) for o in ex.options],
                 ex.label_idx,
+                [i],
             )
-            for ex, s, q in zip(examples, states, questions, strict=True)
+            for i, (ex, s, q) in enumerate(zip(examples, states, questions, strict=True))
         ]
+
+    def collate(self, items: Sequence[Encoded]) -> Batch:
+        from trueodds.batching import collate  # torch, which this module otherwise does not need
+
+        return collate(items, self.pad)
+
+    def n_sequences(self, example: Example) -> int:
+        return example.k
 
     def lengths(self, examples: Sequence[Example], chunk: int = 4096) -> list[int]:
         """The longest sequence of each question, after truncation; used to group batches."""

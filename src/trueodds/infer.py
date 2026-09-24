@@ -49,9 +49,10 @@ class TrueOdds:
     def predict_batch(
         self, state: str, questions: Sequence[tuple[str, Sequence[str]]]
     ) -> list[dict[str, float]]:
-        """Many questions about one state in one call; their sequences share micro-batches."""
+        """Many questions about one state in one call. A cross-encoder's sequences share
+        micro-batches; a shared-state model reads the state once for all of them (spec 004)."""
         examples = [request_example(i, state, q, opts) for i, (q, opts) in enumerate(questions)]
-        probs = self.predictor.predict(examples)
+        probs = self.predictor.predict(examples, pack=True)
         return [
             dict(zip(ex.options, map(float, p), strict=True))
             for ex, p in zip(examples, probs, strict=True)

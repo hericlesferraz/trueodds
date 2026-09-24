@@ -1,0 +1,20 @@
+# Phase 5B, shared state encoding (D13, spec 004): v1's settings (phase2-templates.yaml) with the
+# state encoded once per question and each option read at its own [CLS] in the packed sequence.
+# Run with: uv run --extra gpu --extra tracking python -m trueodds.train configs/phase5-shared.yaml
+run: phase5-shared
+architecture: shared
+pooling: cls  # each option's [CLS] (spec 004)
+eval_sets: [dev]
+resample_templates: true
+lr: 3.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.06
+epochs: 2
+questions_per_step: 32
+max_tokens_per_microbatch: 16384  # packed tokens; checked by the VRAM probe
+grad_checkpointing: false
+tracking: mlflow  # D24; needs --extra tracking
+select_by: nll
+eval_every: 1000
+log_every: 50
+seed: 0

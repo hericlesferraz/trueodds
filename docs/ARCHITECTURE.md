@@ -50,6 +50,28 @@ Consequences, all deliberate:
 - **Cost grows with K.** A question with K options is K sequences, and the state is encoded K times.
   That is what the shared-state experiment of Phase 5 removes (D13).
 
+### The shared-state variant (Phase 5B, D13, spec 004)
+
+`architecture: shared` in a config, and in a checkpoint's `model.json`. One packed sequence holds
+the state once, then each question and its options:
+
+```
+[CLS] state [SEP] | q1 [SEP] | [CLS] o11 [SEP] | [CLS] o12 [SEP] | q2 [SEP] | [CLS] o21 [SEP] ...
+```
+
+Boolean attention masks, built on the device from per-token question and option ids, let the
+state see only the state, a question the state and itself, and an option the state, its question
+and itself. Every question starts at the same position after the state and every option right
+after its question, so a question scores the same alone or packed with others, and permuting
+options still permutes their probabilities. ModernBERT's local layers get the same mask AND its
+64-token window, measured by position id. Each option is scored from its own `[CLS]` by the same
+head. The masks and `position_ids` go straight into `ModernBertModel` (transformers 5.17 accepts
+a mask per layer type), so the encoder itself is unchanged.
+
+What changes: the state is encoded without seeing the question or the options, and
+`predict_batch` puts every question about one state into one sequence. Training and the harness
+still read one question per sequence, since the datasets have one question per state.
+
 Answer formats:
 
 | Task | Options |
@@ -117,7 +139,8 @@ questions about one state is no faster than asking them one by one; the shared-s
 | Module | Role |
 |---|---|
 | `trueodds/encode.py` | tokenization and truncation (D9), no torch |
-| `trueodds/model.py` | `DecisionModel`: encoder, pooling (CLS or mean), linear head, masked scores; save and load |
+| `trueodds/shared.py` | the shared-state variant (spec 004): packed sequences, their masks, collation, `SharedEncoder` |
+| `trueodds/model.py` | `DecisionModel`: encoder, pooling (CLS or mean), linear head, masked scores; save and load; the cross-encoder or the shared-state variant |
 | `trueodds/batching.py` | steps, token-budget micro-batches, collation (D22) |
 | `trueodds/train.py` | the training loop, one YAML config per run |
 | `trueodds/predict.py` | `ModelPredictor`, the harness `Predictor` for a checkpoint; scores, and probabilities at the checkpoint's temperature |

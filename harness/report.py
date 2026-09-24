@@ -2,6 +2,7 @@
 
 uv run python -m harness.report harness/results/*-baselines.json harness/results/*-eval.json
 uv run python -m harness.report harness/results/<stamp>-calibration.json   # Phase 3, before/after
+uv run python -m harness.report harness/results/<stamp>-compare.json       # Phase 5, B against A
 """
 
 from __future__ import annotations
@@ -111,12 +112,35 @@ def latency_tables(result: dict) -> str:
     return "\n".join(lines)
 
 
+def compare_tables(result: dict) -> str:
+    """B - A per file, each difference with its paired 95% interval (training sources, held-out)."""
+    a, b = result["a"], result["b"]
+    lines = [f"A = {a['run']}/{a['checkpoint']} (T = {a['temperature']:.4f}), "
+             f"B = {b['run']}/{b['checkpoint']} (T = {b['temperature']:.4f})", ""]  # fmt: skip
+    head = ["source/split", "n", "acc A", "acc B", "Δ acc (95% CI)", "NLL A", "NLL B",
+            "Δ NLL (95% CI)", "ECE A", "ECE B", "Δ ECE (95% CI)"]  # fmt: skip
+
+    def cell(m: dict) -> list[str]:
+        lo, hi = m["ci95"]
+        return [_fmt(m["a"]), _fmt(m["b"]), f"{m['delta']:+.3f} ({lo:+.3f}, {hi:+.3f})"]
+
+    for role, title in (("train", "Training sources (test)"), ("heldout", "Held-out datasets")):
+        lines += [f"**{title}**", "", "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+        for key, r in result["results"].items():
+            if r["role"] == role:
+                row = [key, str(r["n"]), *cell(r["accuracy"]), *cell(r["nll"]), *cell(r["ece"])]
+                lines.append("| " + " | ".join(row) + " |")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="+", type=Path)
     paths = parser.parse_args().paths
     kinds = [json.loads(p.read_text()).get("kind") for p in paths]
-    others = [p for p, k in zip(paths, kinds, strict=True) if k not in ("calibration", "latency")]
+    special = ("calibration", "latency", "compare")
+    others = [p for p, k in zip(paths, kinds, strict=True) if k not in special]
     if others:
         print(table(others))
     for p, k in zip(paths, kinds, strict=True):
@@ -126,6 +150,9 @@ def main() -> None:
         elif k == "latency":
             print(f"\n### Latency: {p.name}\n")
             print(latency_tables(json.loads(p.read_text())))
+        elif k == "compare":
+            print(f"\n### Comparison: {p.name}\n")
+            print(compare_tables(json.loads(p.read_text())))
 
 
 if __name__ == "__main__":

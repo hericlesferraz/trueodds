@@ -1,4 +1,4 @@
-"""Measure ModernBERT-base on this GPU: a bf16 forward pass, then training throughput.
+"""Measure a ModernBERT backbone (base by default) on this GPU: a bf16 forward pass, then training throughput.
 
 Training step = forward, backward and AdamW step on a model with fp32 weights under bf16 autocast,
 with a linear score head on the CLS vector (the Phase 1 model, D2). Inputs are synthetic token ids
@@ -12,6 +12,7 @@ that micro-batch.
 
     uv run --extra gpu python scripts/gpu_bench.py                    # sdpa
     uv run --extra gpu python scripts/gpu_bench.py --attn flash_attention_2
+    uv run --extra gpu python scripts/gpu_bench.py --backbone answerdotai/ModernBERT-large
 """
 
 from __future__ import annotations
@@ -27,7 +28,9 @@ from pathlib import Path
 import torch
 from transformers import AutoModel
 
-MODEL = "answerdotai/ModernBERT-base"
+from trueodds.encode import BACKBONE
+
+MODEL = BACKBONE  # set by --backbone
 GIB = 1024**3
 RESULTS = Path(__file__).resolve().parents[1] / "harness" / "results"
 
@@ -183,6 +186,7 @@ def nvml_used_gib() -> float | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--backbone", default=BACKBONE)
     parser.add_argument("--attn", default="sdpa", choices=["sdpa", "flash_attention_2", "eager"])
     parser.add_argument("--lengths", type=int, nargs="+", default=[128, 256, 512])
     parser.add_argument("--budget-gib", type=float, default=15.0)
@@ -191,6 +195,8 @@ def main() -> None:
     parser.add_argument("--no-checkpointing-only", action="store_true")
     parser.add_argument("--no-save", action="store_true")
     args = parser.parse_args()
+    global MODEL
+    MODEL = args.backbone
     global VARLEN
     VARLEN = args.varlen
     global ONLY_NO_CKPT
@@ -223,6 +229,8 @@ def main() -> None:
     if not args.no_save:
         stamp = dt.datetime.now().strftime("%Y-%m-%d-%H%M%S")
         suffix = "-varlen" if args.varlen else ""
+        if MODEL != BACKBONE:
+            suffix += "-" + MODEL.rsplit("/", 1)[-1].lower()
         path = RESULTS / f"{stamp}-gpu-bench-{args.attn}{suffix}.json"
         path.write_text(json.dumps(result, indent=2) + "\n")
         print(f"wrote {path}")

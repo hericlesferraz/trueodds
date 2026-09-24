@@ -1,0 +1,20 @@
+# Phase 5A, ModernBERT-large (D3) at v1's settings (phase2-templates.yaml). Only the micro-batch budget
+# changes, to fit memory: 5,120 padded tokens, ~0.83 of the largest the GPU bench fit (6,144).
+# Run with: uv run --extra gpu --extra tracking python -m trueodds.train configs/phase5-large.yaml
+run: phase5-large
+backbone: answerdotai/ModernBERT-large
+pooling: cls  # D25
+eval_sets: [dev]
+resample_templates: true
+lr: 3.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.06
+epochs: 2
+questions_per_step: 32
+max_tokens_per_microbatch: 5120  # D22: the gradient does not depend on the split
+grad_checkpointing: false
+tracking: mlflow  # D24; needs --extra tracking
+select_by: nll
+eval_every: 1000
+log_every: 50
+seed: 0

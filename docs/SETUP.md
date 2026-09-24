@@ -236,6 +236,37 @@ Many questions about the 256-token state, mixed K (2, 3, 4, 10, 14), p50 of 20 r
   fp32 on the CPU gives 9e-7.
 - Peak VRAM reserved during the whole run: 2.5 GiB (`peak_vram_gib`).
 
+## Phase 5: memory of the experiments
+
+**ModernBERT-large** (`scripts/gpu_bench.py --backbone answerdotai/ModernBERT-large`,
+`harness/results/2026-09-24-154332-gpu-bench-sdpa-modernbert-large.json`). Largest training
+micro-batch under 15 GiB, synthetic unpadded sequences:
+
+| Length | No checkpointing | Tokens/s | With checkpointing | Tokens/s |
+|---|---|---|---|---|
+| 128 | 52 sequences (6,656 tokens) | 11.3k | 328 | 9.0k |
+| 256 | 24 (6,144) | 11.1k | 164 | 8.8k |
+| 512 | 12 (6,144) | 10.6k | 80 | 8.4k |
+
+About 2.3× slower per token than base (25k tokens/s) and a micro-batch about a third of base's
+size: fp32 weights, gradients and AdamW state take ~6.3 GB of the budget before any activation.
+`configs/phase5-large.yaml` keeps v1's 32-question step and uses 5,120-token micro-batches without
+checkpointing (D22: the gradient does not depend on the split).
+
+**Longest-first VRAM probes** (50 costliest steps, `--no-tracking`):
+
+| Run | Micro-batch budget | Allocator | Peak reserved | Peak allocated | Padded tokens/s |
+|---|---|---|---|---|---|
+| `phase5-large` | 5,120 | default | 14.71 GiB | 12.89 GiB | — |
+| `phase5-large` | 5,120 | `expandable_segments` | 13.14 GiB | 12.83 GiB | 10.95k |
+| `phase5-shared` | 16,384 packed tokens | `expandable_segments` | 11.89 GiB | 11.74 GiB | 22.1k |
+
+With the default allocator -large ends 0.3 GiB under the budget, mostly fragmentation; both
+Phase 5 runs are trained with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`. At 10.95k
+tokens/s an epoch of -large takes about 4 hours. The shared-state model runs custom boolean masks
+through SDPA at 22.1k tokens/s (base's cross-encoder: 23.5k) and needs fewer tokens per question,
+since the state is not repeated per option.
+
 ## Workarounds
 
 - **A micro-batch that passes a short probe can still run out of memory later.** With padded
