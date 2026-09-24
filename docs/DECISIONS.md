@@ -480,6 +480,46 @@ data.
 
 ---
 
+## D28 — predict() is a loaded object over the harness scoring path, left as measured
+*2026-09-24, Phase 4*
+
+**Decision:**
+- **`trueodds.load(path)` returns a `TrueOdds` object** with `predict(state, question, options)
+  -> {option: probability}` and `predict_batch(state, [(question, options), ...])` (spec 003). It
+  wraps `ModelPredictor`, so `predict()` and `harness.evaluate` score through the same function
+  and the harness numbers are the numbers a caller gets. The fitted temperature is applied
+  (D27).
+- **The default is a checkpoint path**, `~/.trueodds/runs/phase2-templates/best`
+  (`paths.DEFAULT_CHECKPOINT`). Loading needs no MLflow; the registry (D24) stays a tool for
+  comparing runs.
+- **Requests are checked by spec 001's rules** (`Example.validate`): at least 2 options, none
+  empty, no duplicates (a dict cannot hold both), a non-empty question. The MLflow pyfunc model
+  now builds its examples through the same helper.
+- **No inference optimization.** The model runs as the harness evaluated it: fp32 weights under
+  bf16 autocast, PyTorch SDPA. The exit target is met without bf16 weights or `torch.compile`, so
+  neither was tried; each would change the numbers slightly, and the harness would have to score
+  that variant too.
+- **No HTTP endpoint** in v1 (the plan's optional FastAPI task, skipped).
+
+**Why:** a loaded object keeps the 0.6 GB model in memory between calls, which is what makes tens
+of milliseconds possible; a module-level `predict()` would hide a global. Keeping one scoring path
+means there is nothing to reconcile between what was measured and what is served.
+
+**Result** (`harness/results/2026-09-24-122853-latency.json`): 4 options and a 256-token state,
+p50 17.7 ms and p95 18.8 ms (target 30 and 60). Below about 1,000 tokens per call the time is
+per-call overhead, 13–14 ms (2 options and 64 tokens take 13.7 ms); above it the forward pass is
+compute-bound at 70–90k tokens/s, so 14 options and a 480-token state take 98 ms. **`predict_batch`
+is no faster than a loop** (50 questions about one state: 1.31 s against 1.27 s): every option
+repeats the state, so most single questions are already past the crossover, and a batch removes
+overhead that was mostly hidden behind compute. Large micro-batches are also slower per token: at
+a 4,096-token budget instead of the eval budget of 32,768, the same batch takes 1.06 s, about 20%
+faster than the loop. The budget was left as it is (SETUP.md). Batch and loop differ by up
+to 0.013 in probability on the GPU and by 9e-7 in fp32 on the CPU: bf16 rounding under different
+batch shapes, not a bug. Encoding the state once (D13) is the experiment that would change the
+batch numbers.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

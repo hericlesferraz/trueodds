@@ -7,7 +7,8 @@ a claim in the README.
 ## File
 
 `harness/results/YYYY-MM-DD-HHMMSS-<kind>.json`, committed. `kind` is `baselines` (no model) or
-`eval` (a model). Other kinds in the same folder: `gpu-bench-<attn>` and `data-stats`.
+`eval` (a model). Other kinds in the same folder: `gpu-bench-<attn>`, `data-stats`,
+`calibration` (below) and `latency` (spec 003).
 
 ```json
 {

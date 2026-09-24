@@ -97,6 +97,21 @@ Throughput is constant in tokens, and neither attention backend skips the comput
 so batches are grouped by length as well as by K. One question with 10 options (Yahoo) costs as much
 as five yes/no questions, so the micro-batch is sized in padded tokens, not questions (D10, D22).
 
+## Inference (D28)
+
+`trueodds.load()` reads a checkpoint directory once and keeps the model on the GPU;
+`predict(state, question, options)` builds the same `Example` the harness scores, checks it by
+spec 001's rules, and goes through `ModelPredictor` (encoding, micro-batches, bf16 autocast,
+softmax at the fitted T). There is no second code path to drift from what the harness measured.
+`predict_batch` sends many questions about one state through the same call, sharing
+micro-batches.
+
+Measured on the RTX 5060 Ti (`docs/SETUP.md`): a 4-option question on a 256-token state takes
+17.7 ms (p50). Below about 1,000 tokens a call costs its overhead (13–14 ms); above it, compute.
+Since the state is encoded once per option (D2), cost grows with K × length, and a batch of
+questions about one state is no faster than asking them one by one; the shared-state experiment
+(D13) is what would change that.
+
 ## Code
 
 | Module | Role |
@@ -106,6 +121,7 @@ as five yes/no questions, so the micro-batch is sized in padded tokens, not ques
 | `trueodds/batching.py` | steps, token-budget micro-batches, collation (D22) |
 | `trueodds/train.py` | the training loop, one YAML config per run |
 | `trueodds/predict.py` | `ModelPredictor`, the harness `Predictor` for a checkpoint; scores, and probabilities at the checkpoint's temperature |
+| `trueodds/infer.py` | `trueodds.load()` and `TrueOdds.predict` / `predict_batch` (spec 003, D28): requests checked, scored through `ModelPredictor` |
 | `trueodds/calibrate.py` | fitting the temperature by NLL and writing `temperature.json` (D27) |
 | `trueodds/tracking.py` | MLflow runs, registering and promoting versions, mirroring harness results (D24) |
 | `trueodds/mlflow_model.py` | the checkpoint as an MLflow pyfunc model (rows of state, question, options → probabilities) |

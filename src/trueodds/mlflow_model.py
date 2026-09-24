@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import mlflow.pyfunc
 
-from trueodds.data.schema import Example
-
 
 class TrueOddsModel(mlflow.pyfunc.PythonModel):
     def __getstate__(self) -> dict:
@@ -26,17 +24,11 @@ class TrueOddsModel(mlflow.pyfunc.PythonModel):
         self.predictor = ModelPredictor.load(Path(context.artifacts["checkpoint"]))
 
     def predict(self, context, model_input, params=None) -> list[list[float]]:
+        from trueodds.infer import request_example
+
+        rows = model_input.to_dict("records")
         examples = [
-            Example(
-                id=f"request/{i}",
-                source="request",
-                split="test",
-                state=row["state"],
-                question=row["question"],
-                options=list(row["options"]),
-                label_idx=0,  # unused: nothing is scored here
-                template_id="native",
-            )
-            for i, row in enumerate(model_input.to_dict("records"))
+            request_example(i, row["state"], row["question"], row["options"])
+            for i, row in enumerate(rows)
         ]
         return [p.tolist() for p in self.predictor.predict(examples)]

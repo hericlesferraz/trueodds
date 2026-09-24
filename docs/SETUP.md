@@ -187,6 +187,55 @@ curves and registered version 2 by itself. A version is 573 MB of artifacts, the
 - The unit tests of the tracking extra run with `uv run --extra tracking pytest`; with a plain
   `uv sync`, `tests/test_tracking.py` skips its MLflow test.
 
+## Inference latency (Phase 4)
+
+```bash
+uv run --extra gpu python -m harness.latency         # writes harness/results/<stamp>-latency.json
+uv run python -m harness.report harness/results/<stamp>-latency.json
+```
+
+`predict()` end to end (tokenization, forward pass, copy to the CPU, softmax), `phase2-templates/best`
+at T = 1.0576, fp32 weights under bf16 autocast, SDPA, torch 2.11. 20 warmup calls, then 200 timed
+calls per cell; the state is BoolQ test text cut to the token count
+(`2026-09-24-122853-latency.json`):
+
+| K | state tokens | longest sequence | p50 ms | p95 ms |
+|---|---|---|---|---|
+| 2 | 64 | 75 | 13.7 | 14.6 |
+| 2 | 256 | 267 | 13.8 | 14.6 |
+| 2 | 480 | 491 | 16.5 | 17.4 |
+| 4 | 64 | 77 | 14.1 | 15.0 |
+| 4 | 256 | 269 | **17.7** | **18.8** |
+| 4 | 480 | 493 | 26.9 | 28.1 |
+| 14 | 64 | 78 | 16.9 | 17.8 |
+| 14 | 256 | 270 | 45.8 | 47.3 |
+| 14 | 480 | 494 | 98.2 | 99.9 |
+
+Many questions about the 256-token state, mixed K (2, 3, 4, 10, 14), p50 of 20 repeats:
+
+| questions | sequences | `predict_batch` | one by one | speedup | max prob. difference |
+|---|---|---|---|---|---|
+| 10 | 66 | 266 ms | 254 ms | 0.95× | 9.5e-3 |
+| 50 | 330 | 1,314 ms | 1,270 ms | 0.97× | 1.3e-2 |
+
+- **Two regimes, crossing at about 1,000 tokens per call.** Below it the call is bound by
+  per-call overhead, about 13–14 ms whatever the size (K = 2 on 64 tokens is 150 tokens and takes
+  13.7 ms). Above it the call is bound by compute. Timed on the forward pass alone, with fixed
+  shapes: 4 × 270 tokens 14.0 ms (77k tokens/s), 16 × 270 48.5 ms (89k), 64 × 270 244 ms (71k),
+  128 × 270 490 ms (71k). The 4-option, 256-token request (1,080 tokens) sits at the crossover;
+  tokenization is 0.5 ms of it.
+- **Why a batch does not help:** most of the 50 questions (K ≥ 3 on 270-token sequences) are
+  already past the crossover, where the per-call overhead runs while the GPU computes. A batch
+  removes overhead that was mostly hidden already.
+- **Large micro-batches are slower per token.** The 50-question batch's forward time, by
+  micro-batch budget: 4,096 padded tokens 1,058 ms (27 micro-batches), 8,192 1,193 ms, 16,384
+  1,292 ms, 32,768 (the eval budget `predict_batch` uses) 1,306 ms, 65,536 1,318 ms. A 4,096-token
+  budget would make `predict_batch` about 20% faster than the loop; not changed, as the target is
+  met and the harness uses the same budget (D28).
+- The batch/loop difference is bf16 rounding under different batch shapes: the same comparison in
+  fp32 on the CPU gives 9e-7.
+- Peak VRAM reserved during the whole run: 2.5 GiB (`peak_vram_gib`).
+
 ## Workarounds
 
 - **A micro-batch that passes a short probe can still run out of memory later.** With padded

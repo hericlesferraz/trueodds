@@ -91,18 +91,41 @@ def calibration_tables(result: dict) -> str:
     return "\n".join(lines)
 
 
+def latency_tables(result: dict) -> str:
+    """Per-request percentiles by K and state length, then the batch against one by one."""
+    lines = ["| K | state tokens | longest sequence | p50 ms | p95 ms | mean ms |",
+             "|---|---|---|---|---|---|"]  # fmt: skip
+    for r in result["requests"]:
+        lines.append(
+            f"| {r['k']} | {r['state_tokens']} | {r['longest_sequence']} | {r['p50_ms']:.1f} "
+            f"| {r['p95_ms']:.1f} | {r['mean_ms']:.1f} |"
+        )
+    lines += ["", "| questions | sequences | batch ms | one by one ms | batch ms/question "
+              "| speedup | max diff |", "|---|---|---|---|---|---|---|"]  # fmt: skip
+    for b in result["batches"]:
+        lines.append(
+            f"| {b['questions']} | {b['sequences']} | {b['batch_p50_ms']:.0f} "
+            f"| {b['loop_p50_ms']:.0f} | {b['batch_ms_per_question']:.1f} | {b['speedup']:.2f}x "
+            f"| {b['max_abs_diff']:.1e} |"
+        )
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="+", type=Path)
     paths = parser.parse_args().paths
     kinds = [json.loads(p.read_text()).get("kind") for p in paths]
-    others = [p for p, k in zip(paths, kinds, strict=True) if k != "calibration"]
+    others = [p for p, k in zip(paths, kinds, strict=True) if k not in ("calibration", "latency")]
     if others:
         print(table(others))
     for p, k in zip(paths, kinds, strict=True):
         if k == "calibration":
             print(f"\n### Calibration: {p.name}\n")
             print(calibration_tables(json.loads(p.read_text())))
+        elif k == "latency":
+            print(f"\n### Latency: {p.name}\n")
+            print(latency_tables(json.loads(p.read_text())))
 
 
 if __name__ == "__main__":

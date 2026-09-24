@@ -8,9 +8,9 @@ once Phase 0 produces the baselines.
 |---|---|---|
 | 0 ✓ | Environment, data and harness, no training | ModernBERT runs in bf16 on this GPU; every dataset is converted with counts per split; the harness scores accuracy, ECE, NLL and Brier and reports the baselines on test and held-out; throughput is measured |
 | 1 ✓ | Model and training loop, proved on a tiny set | The model overfits 200 examples; option masking, truncation and permutation are proved by tests |
-| 2 | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
+| 2 ✓ | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
 | 3 ✓ | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
-| 4 | Inference (v1) | `predict()` answers in tens of milliseconds, and many questions about one state are measured as a batch |
+| 4 ✓ | Inference (v1) | `predict()` answers in tens of milliseconds, and many questions about one state are measured as a batch |
 | 5 | Experiments (after v1) | Each one is a run compared with the v1 report |
 
 The steps of the original plan map onto these phases: setup and data are Phase 0, the model is
@@ -200,18 +200,33 @@ A second run follows D26: ten trained phrasings per task, 2 epochs, best checkpo
 ## Phase 4 — Inference (v1)
 
 **Tasks**
-- [ ] Write `specs/003-predict.md`: `predict(state, question, options) -> {option: probability}`
-      and the batch form, many questions about one state.
-- [ ] `predict()` loads the best checkpoint and its temperature.
-- [ ] `harness/latency`: p50 and p95 per request at K = 2, 4 and 14 options and states of 64, 256
+- [x] Write `specs/003-predict.md`: `predict(state, question, options) -> {option: probability}`
+      and the batch form, many questions about one state. *`trueodds.load()` returns a `TrueOdds`
+      with `predict` and `predict_batch` (D28); also the latency JSON.*
+- [x] `predict()` loads the best checkpoint and its temperature. *`src/trueodds/infer.py`, through
+      `ModelPredictor`, the harness's scoring path; default `~/.trueodds/runs/phase2-templates/best`;
+      `tests/test_infer.py`.*
+- [x] `harness/latency`: p50 and p95 per request at K = 2, 4 and 14 options and states of 64, 256
       and 480 tokens, after warmup; and the time for 10 and 50 questions about one state in one
-      batch, against the same questions one by one.
-- [ ] Optional: a small FastAPI endpoint around `predict()`.
+      batch, against the same questions one by one. *`harness/latency.py`,
+      `harness/results/2026-09-24-122853-latency.json`.*
+- [ ] Optional: a small FastAPI endpoint around `predict()`. *Skipped for v1 (D28).*
 
 **Exit criteria** *(initial)*
 - One request with 4 options and a 256-token state: p50 ≤ 30 ms, p95 ≤ 60 ms on this GPU.
 - The batch timings are reported.
 - The README shows the results table and the reliability diagrams.
+
+**Met on 2026-09-24** (`harness/results/2026-09-24-122853-latency.json`, 200 requests per cell after
+20 warmup calls, end to end):
+- K = 4, 256-token state: **p50 17.7 ms, p95 18.8 ms**, on the model as the harness scored it
+  (fp32 weights, bf16 autocast, SDPA); nothing was optimized. The range: 13.7 ms (K = 2, 64 tokens)
+  to 98.2 ms (K = 14, 480 tokens).
+- Batch: 10 and 50 questions about a 256-token state (K = 2 to 14) take 266 ms and 1,314 ms with
+  `predict_batch`, 254 ms and 1,270 ms one by one: **no speedup** (0.95–0.97×). Past about 1,000
+  tokens per call the forward pass is compute-bound, and the state is encoded once per option,
+  which a batch does not remove (D13, Phase 5).
+- README: the results table, the three reliability diagrams and the latency table.
 
 ---
 

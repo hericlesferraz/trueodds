@@ -12,10 +12,10 @@ of the system (or the harness and the trainer) must agree on.
 - **Update the spec in the same commit** as any change that makes it inaccurate.
 - Name files `NNN-short-name.md`.
 
-## Planned
+## Written
 
 | Spec | Phase | Contract |
 |---|---|---|
 | `001-example-format.md` | 0 | The unified example (`id, source, split, state, question, options[], label_idx, template_id`), the split rule, the question templates with the held-out one per task, and the dedup rule |
 | `002-run-report.md` | 0 | The results JSON of one evaluation, and the exact definitions of accuracy, ECE, NLL, Brier and the baselines |
-| `003-predict.md` | 4 | `predict(state, question, options) -> {option: probability}` and its batch form, many questions about one state |
+| `003-predict.md` | 4 | `trueodds.load()`, `predict(state, question, options) -> {option: probability}` and `predict_batch`, many questions about one state; the latency results JSON |

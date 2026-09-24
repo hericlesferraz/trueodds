@@ -53,10 +53,16 @@ If the checkpoint's run was tracked in MLflow (D24), the result is also mirrored
 JSON as an artifact, and per file accuracy, NLL and ECE as `harness/...` metrics. The JSON in
 `harness/results/` stays the record.
 
-### Latency (`harness/latency`, Phase 4)
+### Latency (`harness/latency.py`, Phase 4)
 
-p50 and p95 per request by number of options and state length, and the time for many questions
-about one state as a batch.
+p50 and p95 per request of `predict()` (spec 003) at K = 2, 4 and 14 options and states of 64, 256
+and 480 tokens, after warmup, and the time for 10 and 50 questions about one state with
+`predict_batch` against the same questions one by one:
+
+```bash
+uv run --extra gpu python -m harness.latency [--checkpoint ~/.trueodds/runs/<run>/best]
+uv run python -m harness.report harness/results/<stamp>-latency.json
+```
 
 ## Results
 
