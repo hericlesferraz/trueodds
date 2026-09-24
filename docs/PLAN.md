@@ -126,13 +126,17 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
 **Tasks**
 - [x] Runs tracked in MLflow, the best checkpoint of each run registered as a version of the
       `trueodds` model (D24). *`src/trueodds/tracking.py`; `configs/phase2-base.yaml` tracks.*
-- [ ] Full run on the Phase 0 mix: learning rate in 2e-5 to 5e-5, 6% warmup, 2–3 epochs, effective
-      batch of ~32 questions. Settings in `configs/`.
+- [x] Full run on the Phase 0 mix: learning rate in 2e-5 to 5e-5, 6% warmup, 2–3 epochs, effective
+      batch of ~32 questions. Settings in `configs/`. *`configs/phase2-base.yaml`: 3 epochs, 20,874
+      steps, 12.42 GiB peak. Best dev accuracy 0.776 at step 12,000 (epoch 2); epoch 3 overfits (dev
+      NLL 0.65 → 1.23, ECE 0.06 → 0.16). Dev ECE was lowest at step 6,000 (0.008).*
 - [x] Choose the pooling (CLS or mean) with two short runs compared on dev (D2).
       *CLS: dev accuracy 0.711 vs 0.692 after 1,500 steps, ahead at every evaluation (D25).*
-- [ ] Evaluate the best checkpoint with the harness on every test split and both held-out datasets.
-- [ ] Accuracy on the held-out question templates, next to the trained templates (D8).
-- [ ] Save the run's report next to the baseline in `harness/results/`.
+- [x] Evaluate the best checkpoint with the harness on every test split and both held-out datasets.
+      *`harness/results/2026-09-23-221918-eval.json`; pooled test accuracy 0.771, NLL 0.652.*
+- [x] Accuracy on the held-out question templates, next to the trained templates (D8). *Gap ≤ 2.0
+      points on BoolQ, HellaSwag, AG News, Yahoo; 12.4 on MNLI and 4.6 on DBpedia-14.*
+- [x] Save the run's report next to the baseline in `harness/results/`.
 
 **Exit criteria** *(set from the Phase 0 baselines in D20)*
 - On every training dataset's test split and on CommonsenseQA and DBpedia-14 (never trained on):
@@ -140,6 +144,10 @@ through uv, the PyTorch cu128 wheel index already used by fluentloop (D11).
   are in D20), and NLL below the prior baseline's (D18).
 - On the held-out templates: accuracy within 3 points of the trained templates. A larger gap means
   the model reads a phrasing, not the question.
+
+**Status (2026-09-23): not met** by `phase2-base/best`. Accuracy passes on all 10 files. NLL is below
+the prior on 9 of 10; ARC-Challenge fails (1.410 vs 1.384, ECE 0.19). The held-out template gap fails
+on MNLI (12.4 points) and DBpedia-14 (4.6).
 
 ---
 
