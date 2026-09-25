@@ -1,7 +1,8 @@
-"""Latency of `predict()` on this GPU, per request and for many questions about one state (spec 003).
+"""Latency of `predict()`, per request and for many questions about one state (spec 003).
 
     uv run --extra gpu python -m harness.latency                      # the v1 checkpoint
     uv run --extra gpu python -m harness.latency --checkpoint ~/.trueodds/runs/<run>/best
+    uv run python -m harness.latency --device cpu --warmup 3 --repeats 30 --batch-repeats 3  # 5C
 
 A request is timed end to end, as a caller sees it: tokenization, the forward pass, the copy of the
 scores to the CPU (which waits for the GPU) and the softmax. The state is real text (BoolQ test
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import platform
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -162,6 +164,8 @@ def env(model: TrueOdds) -> dict:
     device = next(model.predictor.model.parameters()).device
     return {
         "gpu": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
+        "cpu": cpu_name() if device.type == "cpu" else None,
+        "threads": torch.get_num_threads() if device.type == "cpu" else None,
         "device": str(device),
         "torch": torch.__version__,
         "transformers": transformers.__version__,
@@ -172,17 +176,32 @@ def env(model: TrueOdds) -> dict:
     }
 
 
+def cpu_name() -> str:
+    try:
+        for line in Path("/proc/cpuinfo").read_text().splitlines():
+            if line.startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return platform.processor()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--checkpoint", type=Path, default=paths.DEFAULT_CHECKPOINT)
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument("--batch-repeats", type=int, default=20)
+    parser.add_argument("--device", help="cuda (the default when available) or cpu")
+    parser.add_argument("--threads", type=int, help="CPU threads (torch.set_num_threads)")
     parser.add_argument("--no-write", action="store_true", help="print only, write no JSON")
     args = parser.parse_args()
+    if args.threads:
+        torch.set_num_threads(args.threads)
 
-    model = load(args.checkpoint)
-    if torch.cuda.is_available():
+    model = load(args.checkpoint, device=args.device)
+    cuda = next(model.predictor.model.parameters()).device.type == "cuda"
+    if cuda:
         torch.cuda.reset_peak_memory_stats()
     result = {
         "kind": "latency",
@@ -194,9 +213,8 @@ def main() -> None:
         "warmup": args.warmup,
         "repeats": args.repeats,
         **measure(model, args.warmup, args.repeats, args.batch_repeats),
-        "peak_vram_gib": (
-            torch.cuda.max_memory_reserved() / 2**30 if torch.cuda.is_available() else None
-        ),
+        "batch_warmup": 3,
+        "peak_vram_gib": torch.cuda.max_memory_reserved() / 2**30 if cuda else None,
     }
     if not args.no_write:
         print(f"wrote {write(result)}")

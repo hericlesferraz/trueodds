@@ -12,13 +12,13 @@ and calibration, meaning outcomes it gives 0.8 should happen about 80% of the ti
 
 Runs entirely on consumer hardware: RTX 5060 Ti 16 GB, 32 GB RAM, Ubuntu.
 
-**Status: Phase 4 done, v1 (2026-09-24).** The data (spec 001), the harness with its baselines
-(spec 002), the model, the training loop, a trained model and its temperature, and `predict()`
-(spec 003) exist. `phase2-templates/best` meets every Phase 2 exit criterion (pooled test accuracy
-0.761). A temperature fitted on dev (T = 1.058, D27) lowers pooled test ECE only within noise and
-makes the held-out DBpedia-14 worse (0.144 → 0.166). `trueodds.load().predict()` answers a
-4-option question on a 256-token state in 17.7 ms (p50); batching questions about one state saves
-nothing (D28). Runs are tracked in MLflow (D24). Decisions run to D28. Next: Phase 5 (experiments).
+**Status: Phase 5 in progress (2026-09-25).** v1 is Phases 0–4: the data (spec 001), the harness
+with its baselines (spec 002), the model, the training loop, `phase2-templates/best` (pooled test
+accuracy 0.761) with its dev-fitted temperature (D27), and `trueodds.load().predict()` at 17.7 ms
+p50 for 4 options on a 256-token state (spec 003, D28). Phase 5: **5A done**, ModernBERT-large
+(D29): pooled test accuracy 0.815, calibration the same, DBpedia-14 worse, twice the latency; v1
+stays the default. **5B** (shared state encoding, spec 004) is built and tested and trains next;
+**5C** (latency on the CPU) is planned. Runs are tracked in MLflow (D24). Decisions run to D29.
 
 ## Project map
 

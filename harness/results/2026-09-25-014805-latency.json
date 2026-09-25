@@ -1,0 +1,141 @@
+{
+  "kind": "latency",
+  "created": "2026-09-25T01:48:05",
+  "run": "phase5-large",
+  "checkpoint": "best",
+  "temperature": 1.0408509628075866,
+  "env": {
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "device": "cuda:0",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.17.0",
+    "attention": "sdpa",
+    "architecture": "cross",
+    "weights": "float32",
+    "autocast": "bfloat16"
+  },
+  "warmup": 20,
+  "repeats": 200,
+  "requests": [
+    {
+      "k": 2,
+      "state_tokens": 64,
+      "longest_sequence": 75,
+      "p50_ms": 17.062799495761283,
+      "p95_ms": 17.490341933444142,
+      "mean_ms": 17.129789995378815,
+      "max_ms": 18.770496011711657
+    },
+    {
+      "k": 2,
+      "state_tokens": 256,
+      "longest_sequence": 267,
+      "p50_ms": 24.81161101604812,
+      "p95_ms": 25.511476503743324,
+      "mean_ms": 24.927971629658714,
+      "max_ms": 26.57761800219305
+    },
+    {
+      "k": 2,
+      "state_tokens": 480,
+      "longest_sequence": 491,
+      "p50_ms": 34.076024996466,
+      "p95_ms": 34.23201897239778,
+      "mean_ms": 34.10240995435743,
+      "max_ms": 34.64463699492626
+    },
+    {
+      "k": 4,
+      "state_tokens": 64,
+      "longest_sequence": 77,
+      "p50_ms": 18.60597199993208,
+      "p95_ms": 18.920290051028132,
+      "mean_ms": 18.64314638572978,
+      "max_ms": 19.230714009609073
+    },
+    {
+      "k": 4,
+      "state_tokens": 256,
+      "longest_sequence": 269,
+      "p50_ms": 37.420493506942876,
+      "p95_ms": 37.77011606725864,
+      "mean_ms": 37.47435773504549,
+      "max_ms": 38.35177898872644
+    },
+    {
+      "k": 4,
+      "state_tokens": 480,
+      "longest_sequence": 493,
+      "p50_ms": 61.96712050586939,
+      "p95_ms": 62.351351050892845,
+      "mean_ms": 62.019799108675215,
+      "max_ms": 64.83738598763011
+    },
+    {
+      "k": 14,
+      "state_tokens": 64,
+      "longest_sequence": 78,
+      "p50_ms": 36.36570849630516,
+      "p95_ms": 36.57036099903053,
+      "mean_ms": 36.3901915801398,
+      "max_ms": 36.677906988188624
+    },
+    {
+      "k": 14,
+      "state_tokens": 256,
+      "longest_sequence": 270,
+      "p50_ms": 112.98671099939384,
+      "p95_ms": 114.00294150371337,
+      "mean_ms": 113.1060902804893,
+      "max_ms": 115.66695201327093
+    },
+    {
+      "k": 14,
+      "state_tokens": 480,
+      "longest_sequence": 494,
+      "p50_ms": 232.07678450853564,
+      "p95_ms": 232.81854242668487,
+      "mean_ms": 232.18235044929315,
+      "max_ms": 235.17651300062425
+    }
+  ],
+  "batches": [
+    {
+      "questions": 10,
+      "sequences": 66,
+      "ks": [
+        2,
+        3,
+        4,
+        10,
+        14
+      ],
+      "repeats": 20,
+      "batch_p50_ms": 578.5096619947581,
+      "loop_p50_ms": 574.1528770158766,
+      "batch_ms_per_question": 57.850966199475806,
+      "loop_ms_per_question": 57.41528770158766,
+      "speedup": 0.9924689503648757,
+      "max_abs_diff": 0.006586614193505147
+    },
+    {
+      "questions": 50,
+      "sequences": 330,
+      "ks": [
+        2,
+        3,
+        4,
+        10,
+        14
+      ],
+      "repeats": 20,
+      "batch_p50_ms": 2849.011579513899,
+      "loop_p50_ms": 2874.835623500985,
+      "batch_ms_per_question": 56.98023159027798,
+      "loop_ms_per_question": 57.4967124700197,
+      "speedup": 1.009064211663012,
+      "max_abs_diff": 0.00659309606028613
+    }
+  ],
+  "peak_vram_gib": 4.46875
+}

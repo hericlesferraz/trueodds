@@ -267,6 +267,12 @@ tokens/s an epoch of -large takes about 4 hours. The shared-state model runs cus
 through SDPA at 22.1k tokens/s (base's cross-encoder: 23.5k) and needs fewer tokens per question,
 since the state is not repeated per option.
 
+**Latency on the CPU (5C)**: AMD Ryzen 7 5700X (8 cores, AVX2, no AVX-512), PyTorch's default of
+8 threads, fp32 weights (no autocast on the CPU), `harness.latency --device cpu --warmup 3
+--repeats 30 --batch-repeats 3`. A 4-option question on a 256-token state: v1 517 ms p50, -large
+1.77 s; the full grid and the CPU/GPU ratios are in PLAN.md (5C). Nothing was tuned: thread
+count, bf16 or int8 weights and ONNX Runtime are untried.
+
 ## Workarounds
 
 - **A micro-batch that passes a short probe can still run out of memory later.** With padded

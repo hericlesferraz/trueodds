@@ -41,9 +41,10 @@ model.predict_batch(state, [(question, options), ...])   # -> [{option: probabil
 {
   "kind": "latency",
   "created": "...", "run": "phase2-templates", "checkpoint": "best", "temperature": 1.0576,
-  "env": {"gpu": "NVIDIA GeForce RTX 5060 Ti", "device": "cuda:0", "torch": "...", "transformers": "...",
-          "attention": "sdpa", "weights": "float32", "autocast": "bfloat16"},
-  "warmup": 20, "repeats": 200,
+  "env": {"gpu": "NVIDIA GeForce RTX 5060 Ti", "cpu": null, "threads": null,   // cpu and threads
+          "device": "cuda:0", "torch": "...", "transformers": "...",   // set with --device cpu
+          "attention": "sdpa", "architecture": "cross", "weights": "float32", "autocast": "bfloat16"},
+  "warmup": 20, "repeats": 200, "batch_warmup": 3,
   "requests": [                      // one per (K, state length): K = 2, 4, 14 x 64, 256, 480 tokens
     {"k": 4, "state_tokens": 256, "longest_sequence": 269,
      "p50_ms": 17.7, "p95_ms": 18.8, "mean_ms": 17.9, "max_ms": 20.5}

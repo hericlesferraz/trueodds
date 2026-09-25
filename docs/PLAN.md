@@ -246,11 +246,14 @@ Large instead of base, at v1's settings (`configs/phase2-templates.yaml`): same 
 gradient-equivalent.
 
 **Tasks**
-- [ ] `scripts/gpu_bench.py --backbone`: the largest -large micro-batch under 15 GiB at 128, 256
-      and 512 tokens, with and without gradient checkpointing; in `docs/SETUP.md`.
-- [ ] `configs/phase5-large.yaml`; the longest-first VRAM probe (50 steps) under 15 GiB.
-- [ ] Full run, then `harness.evaluate`, `harness.calibrate`, `harness.plots` and
-      `harness.latency` on its best checkpoint.
+- [x] `scripts/gpu_bench.py --backbone`: the largest -large micro-batch under 15 GiB at 128, 256
+      and 512 tokens, with and without gradient checkpointing; in `docs/SETUP.md`. *~6,144 tokens
+      without checkpointing, ~11k tokens/s.*
+- [x] `configs/phase5-large.yaml`; the longest-first VRAM probe (50 steps) under 15 GiB. *5,120-token
+      micro-batches; 13.14 GiB with `expandable_segments` (14.71 without).*
+- [x] Full run, then `harness.evaluate`, `harness.calibrate`, `harness.plots` and
+      `harness.latency` on its best checkpoint. *13,916 steps, 13.21 GiB peak; best by dev NLL at
+      step 6,000 (end of epoch 1). `harness/results/2026-09-25-*`.*
 - [x] `harness.report` shows a run next to v1, with a paired bootstrap 95% interval on the pooled
       test accuracy difference. *`harness/compare.py` (B − A in accuracy, NLL and ECE per file and
       pooled, each at its checkpoint's T, from the scores `harness.calibrate` caches);
@@ -260,6 +263,15 @@ gradient-equivalent.
 - Every test and held-out file, the held-out template gap, ECE before and after its temperature,
   and latency, reported next to v1 (`phase2-templates/best`).
 - The pooled test accuracy difference with its interval, so "large is better" is a measured claim.
+
+**Met on 2026-09-25** (D29, `harness/results/2026-09-25-015315-compare.json`):
+- Pooled test accuracy 0.761 → **0.815** (+5.4 points, 95% interval +5.0 to +5.9), NLL 0.614 →
+  0.508; ARC, HellaSwag and MMLU gain 9.5 to 14.3 points, AG News nothing.
+- Pooled ECE the same within noise (0.007 → 0.011 at each model's T); held-out template gap ≤ 1.0.
+- CommonsenseQA +10.9 points. **DBpedia-14 worse:** −1.7 points, ECE 0.166 → 0.203, more
+  underconfident than base.
+- Latency about twice base's: K = 4 on 256 tokens, p50 37.4 ms (base 17.7).
+- v1 stays the default of `trueodds.load()`.
 
 ### 5B — Shared state encoding (D13)
 
@@ -285,6 +297,51 @@ question scores the same alone or packed with others (`specs/004-shared-state.md
   interval: this is what giving the state no view of the question costs.
 - The Phase 4 batch timings measured again. Target: 50 questions about a 256-token state faster
   than v1 answering them one by one (1.27 s).
+
+### 5C — Latency on the CPU
+
+Every latency so far is on the GPU (Phase 4, D28). This measures `predict()` on the CPU (Ryzen 7
+5700X, 8 cores, AVX2), with the same inputs, after the 5A run (a CPU measurement during training
+would slow the run and be noisy).
+
+**Tasks**
+- [x] `harness.latency --device cpu`: the same JSON with `"device": "cpu"` and the thread count.
+      *Also `--threads`; the CPU's name in `env`.*
+- [x] v1 on the CPU across the Phase 4 grid: K = 2, 4 and 14 options × states of 64, 256 and 480
+      tokens, p50 and p95 per request; and 10 and 50 questions about one state, batch against one
+      by one. *`harness/results/2026-09-25-015515-latency.json` (v1) and `-021711-latency.json`
+      (-large); 8 threads, fp32, 30 requests per cell after 3 warmup calls.*
+- [ ] The same grid for the 5A and 5B checkpoints once trained (the shared state should gain most
+      on the CPU). *5A done; 5B after its run.*
+
+**Exit criteria**
+- The CPU grid reported next to the GPU one for v1, with the CPU/GPU ratio per cell. Speed-ups
+  (thread count, lower-precision weights, ONNX Runtime) are separate measurements, each scored by
+  the harness if it changes the numbers.
+
+**Measured on 2026-09-25 for v1 and -large** (p50, CPU against GPU):
+
+| K | state tokens | v1 CPU | v1 GPU | ratio | -large CPU | -large GPU | ratio |
+|---|---|---|---|---|---|---|---|
+| 2 | 64 | 71 ms | 13.7 ms | 5× | 254 ms | 17.1 ms | 15× |
+| 2 | 256 | 208 ms | 13.8 ms | 15× | 843 ms | 24.8 ms | 34× |
+| 2 | 480 | 492 ms | 16.5 ms | 30× | 1.65 s | 34.1 ms | 48× |
+| 4 | 64 | 118 ms | 14.1 ms | 8× | 438 ms | 18.6 ms | 24× |
+| 4 | 256 | **517 ms** | **17.7 ms** | 29× | 1.77 s | 37.4 ms | 47× |
+| 4 | 480 | 1.01 s | 26.9 ms | 38× | 3.48 s | 62.0 ms | 56× |
+| 14 | 64 | 420 ms | 16.9 ms | 25× | 1.74 s | 36.4 ms | 48× |
+| 14 | 256 | 2.09 s | 45.8 ms | 46× | 6.35 s | 113 ms | 56× |
+| 14 | 480 | 4.00 s | 98.2 ms | 41× | 12.0 s | 232 ms | 52× |
+
+- On the CPU the time is compute from the smallest request on: v1 reads 1,700 to 2,100 tokens/s
+  (-large 580 to 610), so the time follows K × state length, and a 4-option question on a 256-token
+  state takes half a second. The GPU's ~14 ms overhead floor hides this for small requests, so the
+  ratio grows from 5× to 30–46× as the request grows. -large costs 3.0 to 4.1× v1 on the CPU,
+  more than the ~2× it costs on the GPU.
+- **Batching is slower than a loop on the CPU:** 50 questions about a 256-token state take 66.3 s
+  with `predict_batch` and 53.7 s one by one (0.81×; -large 0.92×). The likely cause, not yet
+  measured: the batch's micro-batches (the eval budget, 32,768 tokens) pad sequences of different
+  lengths together, and the CPU pays for padding in full; one by one, no sequence is padded.
 
 ### Later
 

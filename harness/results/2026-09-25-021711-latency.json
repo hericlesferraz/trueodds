@@ -1,0 +1,144 @@
+{
+  "kind": "latency",
+  "created": "2026-09-25T02:17:11",
+  "run": "phase5-large",
+  "checkpoint": "best",
+  "temperature": 1.0408509628075866,
+  "env": {
+    "gpu": null,
+    "cpu": "AMD Ryzen 7 5700X 8-Core Processor",
+    "threads": 8,
+    "device": "cpu",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.17.0",
+    "attention": "sdpa",
+    "architecture": "cross",
+    "weights": "float32",
+    "autocast": null
+  },
+  "warmup": 3,
+  "repeats": 30,
+  "requests": [
+    {
+      "k": 2,
+      "state_tokens": 64,
+      "longest_sequence": 75,
+      "p50_ms": 254.16035800299142,
+      "p95_ms": 276.52319495391566,
+      "mean_ms": 253.93762586948773,
+      "max_ms": 314.4415490096435
+    },
+    {
+      "k": 2,
+      "state_tokens": 256,
+      "longest_sequence": 267,
+      "p50_ms": 842.6562234963058,
+      "p95_ms": 891.4816659904318,
+      "mean_ms": 847.7480530991064,
+      "max_ms": 898.5328970011324
+    },
+    {
+      "k": 2,
+      "state_tokens": 480,
+      "longest_sequence": 491,
+      "p50_ms": 1648.8733105070423,
+      "p95_ms": 1720.7104831177276,
+      "mean_ms": 1649.5332569010013,
+      "max_ms": 1741.0530140041374
+    },
+    {
+      "k": 4,
+      "state_tokens": 64,
+      "longest_sequence": 77,
+      "p50_ms": 438.36351050413214,
+      "p95_ms": 461.4319014013745,
+      "mean_ms": 438.6914104029226,
+      "max_ms": 480.5471089784987
+    },
+    {
+      "k": 4,
+      "state_tokens": 256,
+      "longest_sequence": 269,
+      "p50_ms": 1770.734004006954,
+      "p95_ms": 1850.9073749490199,
+      "mean_ms": 1770.2597489008137,
+      "max_ms": 1932.2555279941298
+    },
+    {
+      "k": 4,
+      "state_tokens": 480,
+      "longest_sequence": 493,
+      "p50_ms": 3484.9325830000453,
+      "p95_ms": 3645.8183009453933,
+      "mean_ms": 3494.3239306652686,
+      "max_ms": 3675.6492349959444
+    },
+    {
+      "k": 14,
+      "state_tokens": 64,
+      "longest_sequence": 78,
+      "p50_ms": 1741.7090270027984,
+      "p95_ms": 1816.4143661575508,
+      "mean_ms": 1741.740881066653,
+      "max_ms": 1939.125648001209
+    },
+    {
+      "k": 14,
+      "state_tokens": 256,
+      "longest_sequence": 270,
+      "p50_ms": 6346.838926008786,
+      "p95_ms": 6446.049177010718,
+      "mean_ms": 6344.257007966128,
+      "max_ms": 6521.309009985998
+    },
+    {
+      "k": 14,
+      "state_tokens": 480,
+      "longest_sequence": 494,
+      "p50_ms": 12027.04582948354,
+      "p95_ms": 12129.066223005066,
+      "mean_ms": 12013.228976764367,
+      "max_ms": 12143.74896499794
+    }
+  ],
+  "batches": [
+    {
+      "questions": 10,
+      "sequences": 66,
+      "ks": [
+        2,
+        3,
+        4,
+        10,
+        14
+      ],
+      "repeats": 3,
+      "batch_p50_ms": 32412.13073200197,
+      "loop_p50_ms": 28885.171380999964,
+      "batch_ms_per_question": 3241.213073200197,
+      "loop_ms_per_question": 2888.5171380999964,
+      "speedup": 0.8911839712061979,
+      "max_abs_diff": 5.833293004187112e-07
+    },
+    {
+      "questions": 50,
+      "sequences": 330,
+      "ks": [
+        2,
+        3,
+        4,
+        10,
+        14
+      ],
+      "repeats": 3,
+      "batch_p50_ms": 156247.367295,
+      "loop_p50_ms": 143598.6443879956,
+      "batch_ms_per_question": 3124.9473459,
+      "loop_ms_per_question": 2871.972887759912,
+      "speedup": 0.9190468093896058,
+      "max_abs_diff": 1.3537507347338718e-06
+    }
+  ],
+  "batch_warmup": 3,
+  "peak_vram_gib": null
+}

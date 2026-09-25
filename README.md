@@ -22,8 +22,8 @@ This is a learning project, not a new method.
 ## Status
 
 **v1 (2026-09-24).** ModernBERT-base fine-tuned for one epoch on eight public datasets, with one
-temperature fitted on the dev split. Phases 0 to 4 of the plan are done; the Phase 5 experiments
-come next. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
+temperature fitted on the dev split. Phases 0 to 4 of the plan are done. Phase 5 (experiments)
+is in progress: ModernBERT-large is measured below; shared state encoding is next. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design, and
 [`docs/DECISIONS.md`](docs/DECISIONS.md) for why things are the way they are.
 
@@ -107,6 +107,45 @@ Many questions about one 256-token state (options K = 2 to 14): 50 questions tak
 that repeats the state, so one question already carries enough tokens to keep the GPU busy, and a
 batch only removes per-call overhead that was already hidden behind the compute. Encoding the
 state once is the Phase 5 shared-state experiment (D13).
+
+**On the CPU** (Ryzen 7 5700X, 8 threads, fp32, nothing optimized;
+[`2026-09-25-015515-latency.json`](harness/results/2026-09-25-015515-latency.json)):
+
+| options | state 64 tokens | 256 tokens | 480 tokens |
+|---|---|---|---|
+| 2 | 71 ms | 208 ms | 492 ms |
+| 4 | 118 ms | **517 ms** | 1.01 s |
+| 14 | 420 ms | 2.09 s | 4.00 s |
+
+5 to 46 times the GPU. The CPU has no overhead floor to hide behind, so the time follows the
+number of options times the state length. `predict_batch` is slower than one by one here (50
+questions: 66 s against 54 s).
+
+### Experiment: ModernBERT-large (Phase 5A)
+
+The same training with ModernBERT-large (~395M parameters) instead of base, compared question by
+question with v1, each at its own fitted temperature, with paired bootstrap 95% intervals
+([`2026-09-25-015315-compare.json`](harness/results/2026-09-25-015315-compare.json), D29):
+
+| dataset | accuracy base → large | Δ (95% interval) | ECE base → large |
+|---|---|---|---|
+| BoolQ | 0.806 → 0.860 | +5.4 (+4.3, +6.7) | 0.028 → 0.021 |
+| MNLI | 0.859 → 0.894 | +3.5 (+2.7, +4.3) | 0.013 → 0.020 |
+| ARC-Easy | 0.595 → 0.721 | +12.6 (+10.4, +14.8) | 0.057 → 0.041 |
+| ARC-Challenge | 0.456 → 0.599 | +14.3 (+11.2, +17.5) | 0.049 → 0.037 |
+| HellaSwag | 0.592 → 0.710 | +11.7 (+10.1, +13.5) | 0.028 → 0.044 |
+| MMLU auxiliary | 0.702 → 0.797 | +9.5 (+7.7, +11.3) | 0.016 → 0.025 |
+| AG News | 0.934 → 0.935 | +0.1 (−0.3, +0.5) | 0.012 → 0.011 |
+| Yahoo Answers | 0.744 → 0.760 | +1.5 (+0.8, +2.3) | 0.019 → 0.030 |
+| **Pooled test** | **0.761 → 0.815** | **+5.4 (+5.0, +5.9)** | 0.007 → 0.011 |
+| CommonsenseQA *(held out)* | 0.530 → 0.639 | +10.9 (+7.9, +13.8) | 0.038 → 0.025 |
+| DBpedia-14 *(held out)* | 0.861 → 0.843 | −1.7 (−2.8, −0.7) | 0.166 → 0.203 |
+
+Large reads better: the gain is largest where the answer takes reasoning over the text (ARC,
+HellaSwag, MMLU) and on CommonsenseQA, never trained on. It is not better calibrated, and on
+DBpedia-14, the unseen label set, it is less accurate and more underconfident than base. It also
+takes about twice as long (K = 4, 256-token state: 37.4 ms p50 against 17.7), so v1 stays the
+default model.
 
 ## Datasets
 

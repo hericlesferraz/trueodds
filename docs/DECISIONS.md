@@ -520,6 +520,51 @@ batch numbers.
 
 ---
 
+## D29 — ModernBERT-large: +5.4 points in-domain, calibrated the same, worse on DBpedia-14
+*2026-09-25, Phase 5A*
+
+**Decision:** v1 stays `phase2-templates/best` (ModernBERT-base) as the default of
+`trueodds.load()`, and -large is kept as a measured alternative (`phase5-large/best`, T = 1.041).
+The comparison is recorded; no setting was tuned for -large.
+
+**Setup:** v1's config (`phase2-templates.yaml`) with `backbone: answerdotai/ModernBERT-large`; the
+same 32-question step, split into 5,120-token micro-batches instead of 16,384 to fit (D22: same
+gradient). `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, peak 13.21 GiB reserved. 2 epochs,
+13,916 steps, 10.9k padded tokens/s, about 11 hours with the dev evaluations. As with base, the
+best checkpoint by dev NLL (D26) is the end of epoch 1 (step 6,000: dev accuracy 0.813, NLL 0.509,
+ECE 0.007); epoch 2 raises dev accuracy to 0.828 but ECE to 0.07–0.09 and NLL to 0.55–0.64.
+
+**Result** (`harness/results/2026-09-25-015315-compare.json`, each model at its own T, paired
+bootstrap 95% intervals over questions):
+
+- **In-domain, better everywhere but the topic tasks.** Pooled test accuracy 0.761 → **0.815**
+  (+5.4 points, +5.0 to +5.9), NLL 0.614 → 0.508. The gain is where reading matters: ARC-Challenge
+  +14.3, ARC-Easy +12.6, HellaSwag +11.7, MMLU +9.5, BoolQ +5.4, MNLI +3.5. AG News is unchanged
+  (+0.1, interval crosses 0) and Yahoo gains +1.5.
+- **Calibration in-domain is the same.** Pooled ECE 0.008 before and 0.011 at T = 1.041 (v1 0.007);
+  the change is within noise (−0.003 to +0.006). The temperature again does nothing measurable
+  (dev NLL 0.5085 → 0.5081), as in D27.
+- **Held-out template gap ≤ 1.0 point** on every templated source (DBpedia-14 1.0, the rest ≤ 0.3).
+- **CommonsenseQA (held out): +10.9 points** (0.530 → 0.639), NLL 1.199 → 0.913, ECE 0.036 → 0.025.
+- **DBpedia-14 (held out): worse.** Accuracy 0.861 → 0.843 (−1.7, −2.8 to −0.7), NLL 0.569 →
+  0.668, ECE 0.166 → 0.203 at T. It is more underconfident than base: mean confidence 0.66
+  against accuracy 0.84, answers given 0.5 are right 76% of the time (base: 70%). The temperature
+  fitted in-domain softens it further (ECE 0.186 → 0.203), as in D27. On the held-out DBpedia
+  template, ECE is lower than base's (0.194 → 0.168).
+- **Latency** (`2026-09-25-014805-latency.json`): K = 4 on a 256-token state, p50 **37.4 ms**
+  (base 17.7), over the Phase 4 target of 30 ms that v1 was held to; 1.8 to 2.5× base on every cell
+  past the overhead floor (K = 14, 480 tokens: 232 ms). Batching still saves nothing (50
+  questions: 2.85 s batch, 2.88 s one by one).
+
+**Why v1 stays the default:** -large is the better model on the kind of data it was trained on,
+by a margin its interval makes certain, and on CommonsenseQA. But it costs twice the latency and
+misses the Phase 4 target, and on the one unseen label set it generalizes worse and its
+probabilities are further from true, which is the property this project measures first. A larger
+encoder reads better; it does not make the probabilities transfer. What would, is the open
+question D27 left (K itself or new labels), and a held-out set that is not topic classification.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,
