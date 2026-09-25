@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      # The tracking and plots extras let the MLflow and diagram tests run instead of skipping.
+      - run: uv sync --locked --extra tracking --extra plots
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest  # CPU only; GPU tests are deselected by default

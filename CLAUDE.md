@@ -2,7 +2,7 @@
 
 ## What this is
 
-A small **decision model**, trained from scratch on public data to learn how Jev-style "System One"
+A small **decision model**, fine-tuned from ModernBERT on public data to learn how Jev-style "System One"
 models work. It takes a state, a question and a list of options, and returns a probability for
 each option from a single forward pass, with no generated text.
 
