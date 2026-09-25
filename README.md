@@ -1,5 +1,7 @@
 # trueodds
 
+[![CI](https://github.com/hericlesferraz/trueodds/actions/workflows/ci.yml/badge.svg)](https://github.com/hericlesferraz/trueodds/actions/workflows/ci.yml)
+
 A small decision model that answers multiple-choice questions about a piece of text with a
 probability for each option, from one forward pass, and measures whether those probabilities are
 true.
