@@ -18,6 +18,9 @@ Face card or the dataset's own source, not from memory.
 | Yahoo Answers Topics | `community-datasets/yahoo_answers_topics` | unknown on the card ("More Information Needed") | Derived from Yahoo! Answers; treat as research use only |
 | CommonsenseQA | `tau/commonsense_qa` | MIT | held-out |
 | DBpedia-14 | `fancyzhx/dbpedia_14` | CC BY-SA 3.0 | held-out |
+| RTE | `nyu-mll/glue` (`rte`) | card says "other"; GLUE refers to each dataset's own license | From the PASCAL RTE challenges; no license found stated for them. Held-out (Phase 5D), checked 2026-09-25 |
+| WiC | `aps/super_glue` (`wic`) | CC BY-NC 4.0 ([WiC site](https://pilehvar.github.io/wic/)) | The SuperGLUE card defers to each dataset's license. Held-out (Phase 5D), checked 2026-09-25 |
+| Rotten Tomatoes (sentence polarity) | `cornell-movie-review-data/rotten_tomatoes` | none stated on the card or on [the source page](https://www.cs.cornell.edu/people/pabo/movie-review-data/) | Held-out (Phase 5D), checked 2026-09-25; research use only |
 
 Several of these are share-alike or have no clear license. That is why the data stays out of the
 repository, and why trained weights are not published with this project.

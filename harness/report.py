@@ -3,6 +3,7 @@
 uv run python -m harness.report harness/results/*-baselines.json harness/results/*-eval.json
 uv run python -m harness.report harness/results/<stamp>-calibration.json   # Phase 3, before/after
 uv run python -m harness.report harness/results/<stamp>-compare.json       # Phase 5, B against A
+uv run python -m harness.report harness/results/<stamp>-options.json       # Phase 5E, fewer options
 """
 
 from __future__ import annotations
@@ -134,12 +135,29 @@ def compare_tables(result: dict) -> str:
     return "\n".join(lines)
 
 
+def options_tables(result: dict) -> str:
+    """Per model: each file at each option count, with confidence - accuracy and its interval."""
+    lines = []
+    head = ["file", "K", "n", "accuracy", "confidence", "conf - acc (95% CI)", "ECE"]
+    for run, m in result["models"].items():
+        lines += [f"**{run}** (T = {m['temperature']:.4f})", "",
+                  "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]  # fmt: skip
+        for file, cells in m["results"].items():
+            for k, c in cells.items():
+                lo, hi = c["gap_ci95"]
+                row = [file, k, str(c["n"]), _fmt(c["accuracy"]), _fmt(c["confidence"]),
+                       f"{c['gap']:+.3f} ({lo:+.3f}, {hi:+.3f})", _fmt(c["ece"])]  # fmt: skip
+                lines.append("| " + " | ".join(row) + " |")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="+", type=Path)
     paths = parser.parse_args().paths
     kinds = [json.loads(p.read_text()).get("kind") for p in paths]
-    special = ("calibration", "latency", "compare")
+    special = ("calibration", "latency", "compare", "options")
     others = [p for p, k in zip(paths, kinds, strict=True) if k not in special]
     if others:
         print(table(others))
@@ -153,6 +171,9 @@ def main() -> None:
         elif k == "compare":
             print(f"\n### Comparison: {p.name}\n")
             print(compare_tables(json.loads(p.read_text())))
+        elif k == "options":
+            print(f"\n### Fewer options: {p.name}\n")
+            print(options_tables(json.loads(p.read_text())))
 
 
 if __name__ == "__main__":

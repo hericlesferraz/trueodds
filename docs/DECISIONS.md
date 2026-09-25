@@ -612,14 +612,85 @@ answers 50 questions in less time than v1 takes for two (44 ms against 25 ms per
 the same calibration. Which one to load
 depends on how many questions share a state, and both are measured.
 
+## D31 — Farther held-out datasets: accuracy transfers, probabilities do not
+*2026-09-25, Phase 5D*
+
+**Decision:** RTE, WiC and Rotten Tomatoes are held-out sources from now on (spec 001), scored by
+every model. Nothing changes in the models; the finding is recorded.
+
+**Data:** every labeled official split of each is one `test` file (none is trained on), capped at
+5,000: RTE 2,767 (plus its held-out-template copy, asked with the MNLI phrasings), WiC 5,000,
+Rotten Tomatoes 5,000. WiC and Rotten Tomatoes are asked with a question the model never saw.
+Regenerating the data showed that `prepare_data.py` no longer reproduces the stored training files
+of five sources byte for byte: they were written before D26 and store phrasings 0–3, while a fresh
+run stores 0–9. Rows, labels and dedup are identical, and training re-samples the phrasing every
+epoch (D23), but batches are planned from the stored lengths, so the files the Phase 2–5 models
+were trained on were restored and `stats.json` says so. Every other file is byte-identical, and
+re-scoring all three models reproduced their temperatures exactly.
+
+**Result** (`2026-09-25-12*/13*-calibration.json`, `-compare.json`; at each model's T):
+
+| | v1 | -large | shared | prior NLL |
+|---|---|---|---|---|
+| RTE accuracy / NLL / conf − acc | 0.729 / 0.689 / **+0.155** | 0.771 / 0.607 / +0.127 | 0.759 / 0.585 / +0.110 | 0.693 |
+| WiC accuracy / NLL / conf − acc | **0.475** / 0.760 / **+0.151** | 0.565 / 0.695 / +0.032 | 0.504 / 0.840 / +0.193 | 0.693 |
+| Rotten Tomatoes accuracy / NLL / conf − acc | 0.826 / 0.461 / −0.137 | 0.882 / 0.405 / −0.172 | 0.808 / 0.433 / +0.015 | 0.693 |
+
+- **Accuracy transfers where the skill exists.** RTE (inference, trained as MNLI) and sentiment
+  (never trained) are well above chance in every model; -large gains 4 to 6 points on both.
+- **WiC is a skill the model does not have**: v1 is below chance, -large 6.5 points above it.
+- **Calibration does not transfer, and on new tasks it fails in the dangerous direction.** In
+  training data ECE is under 0.01; on RTE it is 0.11–0.16 in every model and on WiC up to 0.19,
+  **overconfident** in both (only -large is near calibrated on WiC, ECE 0.04): v1
+  gives WiC answers 0.63 on average and is right 47.5% of the time, and its RTE NLL (0.689) is no
+  better than knowing the label frequencies (0.693) despite 73% accuracy. On RTE, the likely cause
+  is the label set: MNLI's "maybe" is gone, and its mass lands on "yes" or "no".
+- **A new label set without a new task is underconfident** (Rotten Tomatoes for v1 and -large,
+  like DBpedia-14), except in the shared model, which is calibrated there (+0.015). One run is not
+  enough to say why.
+- The answer to D27's question, extended: a temperature fitted on seen data cannot fix any of
+  this, since the error changes sign with the kind of novelty. The probabilities are true on data
+  like the training data; outside it, not even their direction can be assumed.
+
+---
+
+## D32 — Underconfidence on unseen labels comes from the labels, and grows with K
+*2026-09-25, Phase 5E*
+
+**Decision:** recorded as a finding; it answers D27's open question. `harness/options.py` stays
+as the tool for it.
+
+**Method:** each question of DBpedia-14 (unseen labels), Yahoo and AG News (trained labels) is
+scored with its answer and K − 1 distractors drawn at random, the same draw for every model, from
+the cached scores. Options never see each other (D2, spec 004), so this equals re-scoring (tested
+on both architectures), and uniform distractors keep a calibrated model calibrated (tested).
+
+**Result** (`2026-09-25-132523-options.json`, confidence − accuracy at each model's T, 95%
+intervals ±0.004–0.010):
+
+| K | DBpedia-14 v1 / large / shared | Yahoo v1 / large / shared | AG News v1 / large / shared |
+|---|---|---|---|
+| 2 | −0.024 / −0.033 / −0.032 | −0.004 / −0.009 / −0.005 | +0.000 / +0.001 / −0.002 |
+| 4 | −0.063 / −0.078 / −0.075 | −0.003 / −0.015 / −0.012 | −0.007 / −0.008 / −0.008 |
+| 10 | −0.132 / −0.166 / −0.156 | −0.014 / −0.029 / −0.037 | |
+| 14 | −0.166 / −0.203 / −0.186 | | |
+
+- **At the same K, unseen labels are underconfident and trained labels are not:** at K = 4,
+  DBpedia-14's gap is −0.06 to −0.08 in every model, Yahoo's and AG News's −0.003 to −0.015.
+- **K amplifies it:** DBpedia-14's gap grows steadily with K, from −0.02/−0.03 at K = 2 to
+  −0.17/−0.20 at K = 14. Yahoo, with trained labels, also drifts underconfident at K = 10, but by
+  a tenth to a quarter as much.
+- So the cause is the labels, and K sets its size. A temperature per K fitted on dev cannot fix it
+  (dev has no unseen labels), which is why one global T made DBpedia-14 worse (D27).
+
 ---
 
 ## Open questions
 
-- **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,
-  and DBpedia-14 is topic classification like AG News and Yahoo. They measure new data and new label
-  sets, not a new kind of task. A held-out yes/no or inference dataset (for example, one of RTE, WiC
-  or a question type absent from training) would test more.
+- **Are the held-out datasets far enough?** *Answered by 5D (D31): RTE, WiC and Rotten Tomatoes
+  added.* Accuracy transfers where the skill exists; calibration does not, and on new tasks it is
+  overconfident. Still open: why the shared model is calibrated on Rotten Tomatoes when the
+  others are not.
 - **A stronger reference than majority class.** A zero-shot NLI classifier (such as a BART-large MNLI
   model) on DBpedia-14 would say whether the model generalizes better than an off-the-shelf approach,
   not just better than chance.
@@ -630,4 +701,4 @@ depends on how many questions share a state, and both are measured.
   never trained) is underconfident while dev asks for a T slightly above 1. A temperature per K
   cannot be fitted for K = 14 from dev, which has no 14-option questions. What is left open is
   whether underconfidence on unseen label sets comes from K itself (more options spreading the
-  probability) or from the new labels. A Phase 5 experiment could separate the two.
+  probability) or from the new labels. *Answered by 5E (D32): the labels, amplified by K.*

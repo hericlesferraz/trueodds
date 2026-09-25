@@ -59,9 +59,18 @@ validation (D14).
 | `yahoo` | `community-datasets/yahoo_answers_topics` | train | topic | train | carved | test |
 | `commonsense_qa` | `tau/commonsense_qa` | held-out | native | — | — | validation |
 | `dbpedia` | `fancyzhx/dbpedia_14` | held-out | topic | — | — | test |
+| `rte` | `nyu-mll/glue` `rte` | held-out | mnli | — | — | train+validation (5D) |
+| `wic` | `aps/super_glue` `wic` | held-out | native | — | — | train+validation (5D) |
+| `rotten_tomatoes` | `cornell-movie-review-data/rotten_tomatoes` | held-out | native | — | — | train+validation+test (5D) |
 
 - `mmlu_aux` dev and test (2,000 each) are carved **by passage**: all questions sharing a `state`
   go to the same split, so no passage is read in both training and evaluation.
+- The Phase 5D held-out sources (D31) are never trained on, so every labeled official split is
+  read into one `test` file. Their ids use the row's position in that concatenation, since `idx`
+  repeats across the official splits. RTE is asked with the MNLI phrasings and options `yes`,
+  `no` (entailment → yes); WiC's state is the two sentences, numbered, with the question
+  `Is the word "{word}" used with the same meaning in both sentences?`; Rotten Tomatoes asks
+  `Is this movie review positive or negative?` with `positive`, `negative`.
 - **Caps (D4, D15):** train is sampled down to 50,000 per source; test and held-out to 5,000 per
   source, stratified by `label_idx`. All sampling uses seed 0, so every run sees the same files.
 

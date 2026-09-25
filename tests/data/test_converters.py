@@ -141,9 +141,51 @@ def test_dbpedia():
 
 def test_sources_registry():
     assert set(c.SOURCES) == {"boolq", "mnli", "arc_easy", "arc_challenge", "hellaswag",
-                              "mmlu_aux", "ag_news", "yahoo", "commonsense_qa", "dbpedia"}  # fmt: skip
+                              "mmlu_aux", "ag_news", "yahoo", "commonsense_qa", "dbpedia",
+                              "rte", "wic", "rotten_tomatoes"}  # fmt: skip
     heldout = {s.name for s in c.SOURCES.values() if s.role == "heldout"}
-    assert heldout == {"commonsense_qa", "dbpedia"}
+    assert heldout == {"commonsense_qa", "dbpedia", "rte", "wic", "rotten_tomatoes"}
     for s in c.SOURCES.values():
         assert "test" in s.splits or s.name == "mmlu_aux"  # mmlu_aux carves its test (D14)
         assert (s.role == "train") == ("train" in s.splits)
+
+
+@pytest.mark.parametrize(("label", "option"), [(0, "yes"), (1, "no")])
+def test_rte_is_asked_with_the_mnli_phrasings(label, option):
+    row = {
+        "sentence1": "The cat sat.",
+        "sentence2": "A cat was sitting. ",
+        "label": label,
+        "idx": 0,
+    }
+    ex = c.rte(row, "test", 41)
+    assert ex.id == "rte/test/41"  # the position, not idx: idx repeats across train+validation
+    assert ex.question == "Does it follow that a cat was sitting?"
+    assert ex.template_id == "mnli:0" and ex.vars == {"hypothesis": "A cat was sitting."}
+    assert ex.options == ["yes", "no"] and ex.label == option
+    assert c.rte({**row, "label": -1}, "test", 0) is None
+
+
+@pytest.mark.parametrize(("label", "option"), [(1, "yes"), (0, "no")])
+def test_wic(label, option):
+    row = {"word": "place", "sentence1": " Come to my place. ", "sentence2": "No place for them.",
+           "label": label, "idx": 0}  # fmt: skip
+    ex = c.wic(row, "test", 3)
+    assert ex.id == "wic/test/3"
+    assert ex.state == "1. Come to my place.\n2. No place for them."
+    assert ex.question == 'Is the word "place" used with the same meaning in both sentences?'
+    assert ex.template_id == "native" and ex.label == option
+
+
+@pytest.mark.parametrize(("label", "option"), [(1, "positive"), (0, "negative")])
+def test_rotten_tomatoes(label, option):
+    ex = c.rotten_tomatoes({"text": " a splash of fun . ", "label": label}, "test", 5)
+    assert ex.id == "rotten_tomatoes/test/5"
+    assert ex.state == "a splash of fun ."
+    assert ex.question == "Is this movie review positive or negative?"
+    assert ex.options == ["positive", "negative"] and ex.label == option
+
+
+def test_new_heldout_sources_are_never_trained():
+    for name in ("rte", "wic", "rotten_tomatoes"):
+        assert c.SOURCES[name].role == "heldout" and set(c.SOURCES[name].splits) == {"test"}

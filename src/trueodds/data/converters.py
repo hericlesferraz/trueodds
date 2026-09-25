@@ -46,6 +46,9 @@ DBPEDIA_LABELS = [
     "Written work",
 ]
 MNLI_OPTIONS = ["yes", "maybe", "no"]  # entailment, neutral, contradiction: GLUE's label order
+# Held-out sources added in Phase 5D (D31). Their question is fixed: a phrasing never trained.
+WIC_QUESTION = 'Is the word "{word}" used with the same meaning in both sentences?'
+SENTIMENT_QUESTION = "Is this movie review positive or negative?"
 
 
 def _example(
@@ -231,6 +234,46 @@ def dbpedia(row: dict, split: str, index: int) -> Example | None:
     return _topic("dbpedia", DBPEDIA_LABELS, state, row["label"], split, index)
 
 
+# Phase 5D held-out sources. Every labeled split is read as one test file, so `idx` repeats across
+# the concatenated splits; the row's position is the key instead.
+
+
+def rte(row: dict, split: str, index: int) -> Example | None:
+    """2-way inference, asked with the trained MNLI phrasings; label 0 is entailment."""
+    if row["label"] not in (0, 1):
+        return None
+    return _example(
+        "rte",
+        split,
+        index,
+        row["sentence1"],
+        ["yes", "no"],
+        row["label"],
+        task="mnli",
+        vars={"hypothesis": " ".join(row["sentence2"].split())},
+    )
+
+
+def wic(row: dict, split: str, index: int) -> Example | None:
+    """Word in context: label 1 means the word has the same meaning in both sentences."""
+    if row["label"] not in (0, 1):
+        return None
+    state = f"1. {row['sentence1'].strip()}\n2. {row['sentence2'].strip()}"
+    question = WIC_QUESTION.format(word=row["word"].strip())
+    return _example("wic", split, index, state, ["yes", "no"], 1 - row["label"], question=question)
+
+
+def rotten_tomatoes(row: dict, split: str, index: int) -> Example | None:
+    """Sentiment of one review sentence: label 1 is positive."""
+    if row["label"] not in (0, 1):
+        return None
+    options = ["positive", "negative"]
+    return _example(
+        "rotten_tomatoes", split, index, row["text"], options, 1 - row["label"],
+        question=SENTIMENT_QUESTION,
+    )  # fmt: skip
+
+
 @dataclass(frozen=True)
 class Source:
     """Where a source comes from on the Hub, and which official split fills each of ours."""
@@ -268,5 +311,12 @@ SOURCES: dict[str, Source] = {
                {"test": "validation"}, commonsense_qa),
         Source("dbpedia", "fancyzhx/dbpedia_14", "dbpedia_14", "topic", "heldout",
                {"test": "test"}, dbpedia),
+        # Phase 5D (D31): no official split is trained on, so every labeled one is test.
+        Source("rte", "nyu-mll/glue", "rte", "mnli", "heldout",
+               {"test": "train+validation"}, rte),
+        Source("wic", "aps/super_glue", "wic", "native", "heldout",
+               {"test": "train+validation"}, wic),
+        Source("rotten_tomatoes", "cornell-movie-review-data/rotten_tomatoes", None, "native",
+               "heldout", {"test": "train+validation+test"}, rotten_tomatoes),
     ]
 }  # fmt: skip

@@ -19,8 +19,10 @@ p50 for 4 options on a 256-token state (spec 003, D28). Phase 5: **5A done**, Mo
 (D29): pooled test accuracy 0.815, calibration the same, DBpedia-14 worse, twice the latency; v1
 stays the default. **5B done**, shared state encoding (spec 004, D30): −1.3 points, the same
 calibration, 50 questions about one state in 44 ms (v1: 1.27 s). **5C done**, latency on the CPU
-for all three (v1: 517 ms for 4 options on 256 tokens). Next: the score head and the distilled
-labels, each once its dataset is chosen. Runs are tracked in MLflow (D24). Decisions run to D30.
+for all three (v1: 517 ms for 4 options on 256 tokens). **5D done** (D31): RTE, WiC and Rotten
+Tomatoes held out; accuracy transfers where the skill exists, calibration does not (overconfident
+on new tasks). **5E done** (D32): underconfidence on unseen labels comes from the labels, amplified
+by K. Later: score head, distilled labels. Runs are tracked in MLflow (D24). Decisions run to D32.
 
 ## Project map
 
@@ -93,6 +95,7 @@ uv run python -m harness.report harness/results/<stamp>-calibration.json
 uv run --extra plots python -m harness.plots harness/results/<stamp>-calibration.json   # diagrams
 uv run --extra gpu python -m harness.latency                             # predict() latency (spec 003)
 uv run python -m harness.compare --b ~/.trueodds/runs/<run>/best         # B against v1, paired CIs (Phase 5)
+uv run python -m harness.options                                          # fewer options per question (5E)
 uv run --extra tracking mlflow ui --backend-store-uri sqlite:///$HOME/.trueodds/mlflow.db
 ```
 

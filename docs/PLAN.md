@@ -371,6 +371,54 @@ padding between questions.
 **Met on 2026-09-25:** all three models across the grid, with the CPU/GPU ratios above. The
 speed-ups (thread count, lower-precision weights, ONNX Runtime) remain untried.
 
+### 5D — Farther held-out datasets
+
+CommonsenseQA and DBpedia-14 resemble training tasks (multiple choice, topics). Three held-out
+datasets of other kinds, scored by all three models, no training: **RTE** (2-way inference; MNLI is
+3-way), **WiC** (whether a word means the same in two sentences, a task never trained) and **Rotten
+Tomatoes** (sentiment, a label set never trained and not a topic). Every labeled split of each is
+read as test (none is trained on), capped at 5,000 (D15).
+
+**Tasks**
+- [x] Converters, sources and tests. *`rte`, `wic`, `rotten_tomatoes` in
+      `trueodds/data/converters.py`; `tests/data/test_converters.py`; spec 001, LICENSES.*
+- [x] Regenerate the data; every file the models were trained or scored on stays byte-identical.
+      *Five training files had drifted since D26 (stored phrasing only); the trained-on files were
+      restored (D31). `harness/results/2026-09-25-124218-data-stats.json`.*
+- [x] Re-score v1, -large and shared (`harness.calibrate --rescore`; T must come out unchanged),
+      and compare -large and shared with v1 on the new files. *All three T identical to the
+      last bit.*
+
+**Exit criteria**
+- Accuracy, NLL and ECE on each new file for all three models, next to their baselines.
+- WiC and Rotten Tomatoes use a question phrasing never trained; that is reported with them.
+
+**Met on 2026-09-25** (D31): accuracy transfers where the skill exists (RTE 0.73–0.77, Rotten
+Tomatoes 0.81–0.88), WiC is near chance (v1 0.475, below it). Calibration does not transfer:
+**overconfident** on RTE (+0.11 to +0.16) and WiC (v1 +0.15, shared +0.19), underconfident on
+Rotten Tomatoes for v1 and -large (−0.14, −0.17), calibrated there only in the shared model.
+
+### 5E — Number of options or new labels?
+
+DBpedia-14 is underconfident in every model. Each question is scored again with its answer and
+K − 1 random distractors, from the cached scores (options never see each other, so a subset of
+options is a subset of the scores). DBpedia-14 (new labels) at K = 2, 4, 10, 14; Yahoo and AG News
+(trained labels) at K = 2, 4, 10 and 2, 4.
+
+**Tasks**
+- [x] `harness/options.py` and `tests/test_options.py`: the answer is always kept and the draw is
+      the same for every model; at the full K the numbers equal the plain evaluation; a calibrated
+      model shows no gap at any K; a cached subset equals re-scoring the subset (cross and shared).
+- [x] Run it for the three models after 5D's re-scoring. *`2026-09-25-132523-options.json`.*
+
+**Exit criteria**
+- Confidence − accuracy with its 95% interval per file, K and model; DBpedia-14 at K = 4 against
+  AG News and Yahoo at K = 4 answers whether the cause is K or the labels.
+
+**Met on 2026-09-25** (D32): **the labels, amplified by K.** At K = 4 DBpedia-14 is underconfident
+by 0.06–0.08 in every model, Yahoo and AG News by at most 0.015; DBpedia-14's gap grows from
+−0.02/−0.03 at K = 2 to −0.17/−0.20 at K = 14.
+
 ### Later
 
 - **Score head:** a numeric answer (regression) as a third kind of output, with its own metric and

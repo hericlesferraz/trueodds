@@ -23,7 +23,8 @@ This is a learning project, not a new method.
 
 **v1 (2026-09-24).** ModernBERT-base fine-tuned for one epoch on eight public datasets, with one
 temperature fitted on the dev split. Phases 0 to 4 of the plan are done. Phase 5 (experiments)
-is in progress: ModernBERT-large and shared state encoding are measured below. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
+is in progress: ModernBERT-large, shared state encoding and farther held-out datasets are measured
+below. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design, and
 [`docs/DECISIONS.md`](docs/DECISIONS.md) for why things are the way they are.
 
@@ -169,6 +170,31 @@ document (AG News, Yahoo, BoolQ). Calibration is unchanged. In return, 50 questi
 state take 44 ms instead of 1.27 s, which is what the Jev-style use (one state, many questions)
 needs. v1 stays the default; `trueodds.load("~/.trueodds/runs/phase5-shared/best")` loads the
 shared model with the same `predict` and `predict_batch`.
+
+### Experiment: farther from the training data (Phase 5D, 5E)
+
+Three more datasets never trained on, of kinds the first two held-out sets did not cover (D31):
+RTE (2-way inference), WiC (does a word mean the same in two sentences, a task never trained) and
+Rotten Tomatoes (sentiment, a label set never trained). At each model's fitted temperature;
+"conf − acc" above 0 is overconfident:
+
+| dataset | v1 accuracy | conf − acc | -large accuracy | conf − acc | shared accuracy | conf − acc |
+|---|---|---|---|---|---|---|
+| RTE (2,767) | 0.729 | +0.155 | 0.771 | +0.127 | 0.759 | +0.110 |
+| WiC (5,000; chance 0.5) | 0.475 | +0.151 | 0.565 | +0.032 | 0.504 | +0.193 |
+| Rotten Tomatoes (5,000) | 0.826 | −0.137 | 0.882 | −0.172 | 0.808 | +0.015 |
+
+**Accuracy carries over where the skill exists; the probabilities do not.** In training data the
+confidence matches the accuracy to within 1%; here it is off by more than 10 points in 7 of the 9
+cells, and on the new tasks it is *over*confident: on WiC, v1 is below chance at an average confidence of 0.63. A
+temperature fitted on seen data cannot fix this, because the error changes sign with the kind of
+novelty.
+
+**Why unseen labels are underconfident** (5E, D32): each question scored again with its answer
+and a few random other options. At 4 options, DBpedia-14 (unseen labels) is still underconfident
+by 0.06–0.08 while Yahoo and AG News (trained labels) are within 0.015, and DBpedia-14's gap grows
+with the number of options (−0.02 at 2, −0.17 at 14 for v1). The cause is the new labels; the
+number of options sets how large it gets.
 
 ## Datasets
 

@@ -82,21 +82,28 @@ def paired(a: dict, b: dict, n_boot: int = N_BOOT, seed: int = 0) -> dict:
     return out
 
 
-def compare(a: Path, b: Path, data_dir: Path = paths.DATA) -> dict:
+def data_stamp(data_dir: Path) -> str | None:
     stats_path = data_dir / "stats.json"
-    stamp = json.loads(stats_path.read_text()).get("created") if stats_path.exists() else None
-    evals = eval_sets(data_dir)
+    return json.loads(stats_path.read_text()).get("created") if stats_path.exists() else None
+
+
+def cached_scores(
+    ckpt: Path, evals: dict[str, list[Example]], data_dir: Path = paths.DATA
+) -> tuple[dict[tuple, np.ndarray], float]:
+    """A checkpoint's cached scores on every evaluation file, by example key, and its T."""
     sets = {**dev_sets(data_dir), **evals}  # the cache holds dev too; its key must match
+    scores = load_or_score(_CacheOnly(ckpt), sets, ckpt / SCORES_FILE, data_stamp(data_dir))
+    table = {_key(ex): s for k in evals for ex, s in zip(evals[k], scores[k], strict=True)}
+    return table, read_temperature(ckpt)
+
+
+def compare(a: Path, b: Path, data_dir: Path = paths.DATA) -> dict:
+    stamp = data_stamp(data_dir)
+    evals = eval_sets(data_dir)
     side = {}
     for name, ckpt in (("a", a), ("b", b)):
-        scores = load_or_score(_CacheOnly(ckpt), sets, ckpt / SCORES_FILE, stamp)
-        t = read_temperature(ckpt)
-        side[name] = {
-            "t": t,
-            "table": {
-                _key(ex): s for k in evals for ex, s in zip(evals[k], scores[k], strict=True)
-            },
-        }
+        table, t = cached_scores(ckpt, evals, data_dir)
+        side[name] = {"t": t, "table": table}
 
     def questions(name: str, exs: list[Example]) -> dict:
         t, table = side[name]["t"], side[name]["table"]
