@@ -9,24 +9,34 @@ Given a **state** (any text), a **question** and a list of **options**, it retur
 decision models such as TypeSafe AI's Jev, rebuilt small, from public datasets, on one consumer
 GPU, to understand how such a model works and where it fails.
 
-Three things are measured:
+trueodds is not affiliated with or endorsed by TypeSafe AI.
 
-- **Accuracy** on the validation data of every training dataset.
-- **Generalization:** accuracy on datasets the model never saw (CommonsenseQA, DBpedia-14),
-  against random and majority-class baselines.
+Three things are measured, by a harness that existed before the first model was trained:
+
+- **Accuracy** on the test split of every training dataset.
+- **Generalization:** accuracy on five datasets the model never saw (CommonsenseQA, DBpedia-14,
+  RTE, WiC, Rotten Tomatoes) and on question phrasings it never saw, against random,
+  majority-class and label-frequency baselines.
 - **Calibration:** expected calibration error (ECE), negative log-likelihood and Brier score,
   before and after temperature scaling, on the training datasets and on the unseen ones.
 
 This is a learning project, not a new method.
 
+**The main finding:** on data like its training data the model's probabilities are true (pooled
+ECE 0.007: answers given 0.8 are right about 80% of the time). On data unlike it they are not, and
+the error changes direction with the kind of novelty: overconfident on tasks it was never trained
+for, underconfident on label sets it never saw. Accuracy carries over where the skill exists;
+calibration does not.
+
 ## Status
 
-**v1 (2026-09-24).** ModernBERT-base fine-tuned for one epoch on eight public datasets, with one
-temperature fitted on the dev split. Phases 0 to 4 of the plan are done. Phase 5 (experiments)
-is in progress: ModernBERT-large, shared state encoding and farther held-out datasets are measured
-below. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
+**Done (2026-09-25).** v1 is ModernBERT-base fine-tuned for one epoch on eight public datasets,
+with one temperature fitted on the dev split (Phases 0–4). Phase 5 measured five experiments
+against it: ModernBERT-large, shared state encoding, latency on the CPU, three farther held-out
+datasets, and what makes unseen labels underconfident; all are below. See
+[`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design, and
-[`docs/DECISIONS.md`](docs/DECISIONS.md) for why things are the way they are.
+[`docs/DECISIONS.md`](docs/DECISIONS.md) (D1–D33) for why things are the way they are.
 
 ## Usage
 
@@ -48,8 +58,22 @@ model.predict_batch(state, [
 ```
 
 The contract (errors, truncation, the batch form) is in [`specs/003-predict.md`](specs/003-predict.md).
-Weights are not in this repository; `scripts/prepare_data.py` and `configs/phase2-templates.yaml`
-rebuild them (see `docs/SETUP.md`).
+## Reproducing
+
+**No trained weights are published** (several datasets are share-alike, non-commercial or have no
+stated license; see [`docs/LICENSES.md`](docs/LICENSES.md)). They are rebuilt from public data on
+one 16 GB GPU; `docs/SETUP.md` has the verified install steps and measurements.
+
+```bash
+uv sync                                                    # Python 3.12, PyTorch with CUDA 12.8
+uv run python scripts/prepare_data.py                      # ~1 GB download, to ~/.trueodds/data
+uv run --extra gpu python -m trueodds.train configs/phase2-templates.yaml   # v1, ~4 h on an RTX 5060 Ti
+uv run --extra gpu python -m harness.calibrate --checkpoint ~/.trueodds/runs/phase2-templates/best
+uv run pytest                                              # unit tests, CPU only
+```
+
+`configs/phase5-large.yaml` (~9 h) and `configs/phase5-shared.yaml` (~1 h) rebuild the Phase 5
+models; set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` for them (SETUP.md).
 
 ## Results
 
@@ -207,7 +231,7 @@ original source in Phase 0.
 | Dataset | Hub ID | Task | Rows (all splits) | License (Hub tag) |
 |---|---|---|---|---|
 | BoolQ | `google/boolq` | yes/no about a passage | 12.7k | CC-BY-SA 3.0 |
-| MNLI | `nyu-mll/multi_nli` | yes / maybe / no | 412k | mixed: CC-BY 3.0, CC-BY-SA 3.0, MIT, other |
+| MNLI | `nyu-mll/glue`, config `mnli` | yes / maybe / no | 432k | other (GLUE defers to MultiNLI's terms) |
 | ARC-Easy, ARC-Challenge | `allenai/ai2_arc` | science multiple choice | 5.2k + 2.6k | CC-BY-SA 4.0 |
 | HellaSwag | `Rowan/hellaswag` | choose the ending | 60k | none on the Hub |
 | MMLU auxiliary train | `cais/mmlu`, config `auxiliary_train` | multiple choice | 100k | MIT |
@@ -220,10 +244,21 @@ original source in Phase 0.
 |---|---|---|---|---|
 | CommonsenseQA | `tau/commonsense_qa` | 5-option commonsense | 12.1k | MIT |
 | DBpedia-14 | `fancyzhx/dbpedia_14` | 14 topics | 630k | CC-BY-SA 3.0 |
+| RTE | `nyu-mll/glue`, config `rte` | 2-way inference (yes / no) | 5.8k | other (from the PASCAL RTE challenges) |
+| WiC | `aps/super_glue`, config `wic` | same word sense? (yes / no) | 7.5k | CC BY-NC 4.0 (WiC's site) |
+| Rotten Tomatoes | `cornell-movie-review-data/rotten_tomatoes` | sentiment | 10.7k | none stated |
 
-Together they are about 1 GB of parquet to download.
+Only labeled splits are used: 2,767 RTE questions and 5,000 each from WiC and Rotten Tomatoes
+(Phase 5D). Together the datasets are about 1 GB of parquet to download.
 
 ## Backbone
 
 [ModernBERT-base](https://huggingface.co/answerdotai/ModernBERT-base) (Answer.AI and LightOn,
-Apache-2.0).
+Apache-2.0); [ModernBERT-large](https://huggingface.co/answerdotai/ModernBERT-large) for the
+Phase 5 comparison.
+
+## License
+
+The code is under the [Apache License 2.0](LICENSE). The datasets are not part of the repository
+and keep their own licenses ([`docs/LICENSES.md`](docs/LICENSES.md)); the results JSONs hold
+counts and metrics, not dataset text.

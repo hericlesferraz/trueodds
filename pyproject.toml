@@ -3,6 +3,8 @@ name = "trueodds"
 version = "0.0.1"
 description = "A small decision model that returns a probability per option, and measures whether those probabilities are true."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<3.13"
 authors = [{ name = "Hericles Ferraz" }]
 dependencies = [
@@ -12,7 +14,7 @@ dependencies = [
     "safetensors>=0.4",
     "tokenizers>=0.20",
     "torch>=2.8",  # a base dependency since Phase 1; the unit tests run it on the CPU (D21)
-    "transformers>=4.48",  # 4.48 is the first release with ModernBERT
+    "transformers>=5.17",  # ModernBERT; 5.17 takes a mask per layer type (the shared model, spec 004)
 ]
 
 # Tools only a GPU machine or a training run needs. Install them with `uv sync --extra gpu`, and run

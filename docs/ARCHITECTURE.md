@@ -7,30 +7,31 @@ the plan starts from; each part is confirmed or changed by a measurement in the 
 
 ```
  Hugging Face Hub
-        │  scripts/prepare_data.py
-        ▼
- converters (one per dataset) ──▶ {id, source, split, state, question, options[], label_idx, template_id}
-        │  cap per dataset, dedup, question templates        ~/.trueodds/data/  (spec 001)
-        ▼
- ┌──────────────────────────────────────────────────────────────────────────────┐
- │ one question with K options  →  K sequences                                  │
- │   [CLS] state [SEP] question [SEP] option_k [SEP]   (state cut first, D9)    │
- │                          │                                                   │
- │                          ▼                                                   │
- │                 ModernBERT-base (bf16)                                       │
- │                          │  pooled vector (CLS or mean, D2)                  │
- │                          ▼                                                   │
- │                 linear → one score s_k                                       │
- │                          │                                                   │
- │   padded options: s_k = −inf     softmax over k     cross-entropy on label   │
- └──────────────────────────────────────────────────────────────────────────────┘
-        │  training: best checkpoint by dev NLL (D26)       ~/.trueodds/runs/
-        ▼
- temperature T, fitted on dev (Phase 3, D27)  →  p_k = softmax(s_k / T)   <checkpoint>/temperature.json
-        │
-        ▼
- harness: accuracy, ECE, NLL, Brier, baselines   →   harness/results/*.json   (spec 002)
- predict(state, question, options) → {option: p}   (Phase 4, spec 003)
+ |  scripts/prepare_data.py
+ v
+ converters (one per dataset) --> {id, source, split, state, question, options[], label_idx, template_id}
+ |  cap per dataset, dedup, question templates        ~/.trueodds/data/  (spec 001)
+ v
+ +------------------------------------------------------------------------------+
+ | one question with K options  ->  K sequences                                 |
+ |   [CLS] state [SEP] question [SEP] option_k [SEP]   (state cut first, D9)    |
+ |   (shared-state variant: one packed sequence, spec 004)                      |
+ |                          |                                                   |
+ |                          v                                                   |
+ |                 ModernBERT-base (bf16)                                       |
+ |                          |  pooled vector (CLS or mean, D2)                  |
+ |                          v                                                   |
+ |                 linear -> one score s_k                                      |
+ |                          |                                                   |
+ |   padded options: s_k = -inf     softmax over k     cross-entropy on label   |
+ +------------------------------------------------------------------------------+
+ |  training: best checkpoint by dev NLL (D26)       ~/.trueodds/runs/
+ v
+ temperature T, fitted on dev (Phase 3, D27)  ->  p_k = softmax(s_k / T)   <checkpoint>/temperature.json
+ |
+ v
+ harness: accuracy, ECE, NLL, Brier, baselines   ->   harness/results/*.json   (spec 002)
+ predict(state, question, options) -> {option: p}   (Phase 4, spec 003)
 ```
 
 ## The model

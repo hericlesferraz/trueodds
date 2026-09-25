@@ -683,6 +683,26 @@ intervals ±0.004–0.010):
 - So the cause is the labels, and K sets its size. A temperature per K fitted on dev cannot fix it
   (dev has no unseen labels), which is why one global T made DBpedia-14 worse (D27).
 
+## D33 — Phase 5 closes; the score head and the distilled labels are deferred
+*2026-09-25*
+
+**Decision:** Phase 5 is done with five experiments measured against v1: ModernBERT-large (D29),
+shared state encoding (D30), latency on the CPU (5C), farther held-out datasets (D31) and options
+against labels (D32). The two experiments the plan listed first, a score head and distilled labels
+for an own domain, are deferred, not dropped. The repository is published under Apache-2.0 (the
+code only; the datasets keep their licenses, `docs/LICENSES.md`, and no weights are published).
+
+**Why:** neither tests whether the model's probabilities are true, which is what this project
+measures. The score head adds a third kind of output (a number), worth building only when numeric
+answers are needed. Distilled labels would train the model on a domain, but an LLM's labels cannot
+tell whether the model is calibrated there: after D31 that needs test labels with a known true
+answer. What the experiments left open matters more: the probabilities are true on data like the
+training data and not beyond it, where the error changes sign with the kind of novelty (D31, D32).
+
+**What would bring them back:** a real need for numeric answers, or a specific domain to use the
+model in, with a way to know the true answers. A next phase, if any, would start from calibration
+outside the training data.
+
 ---
 
 ## Open questions

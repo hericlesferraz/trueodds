@@ -30,3 +30,9 @@ repository, and why trained weights are not published with this project.
 | Model | License |
 |---|---|
 | [ModernBERT-base](https://huggingface.co/answerdotai/ModernBERT-base) | Apache-2.0 |
+| [ModernBERT-large](https://huggingface.co/answerdotai/ModernBERT-large) | Apache-2.0 (Phase 5A) |
+
+## This repository
+
+The code is under the Apache License 2.0 (`LICENSE`, D33). It covers the code and the committed
+results, not the datasets or any trained weights.

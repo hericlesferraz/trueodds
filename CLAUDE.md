@@ -12,17 +12,13 @@ and calibration, meaning outcomes it gives 0.8 should happen about 80% of the ti
 
 Runs entirely on consumer hardware: RTX 5060 Ti 16 GB, 32 GB RAM, Ubuntu.
 
-**Status: Phase 5 in progress (2026-09-25).** v1 is Phases 0–4: the data (spec 001), the harness
-with its baselines (spec 002), the model, the training loop, `phase2-templates/best` (pooled test
-accuracy 0.761) with its dev-fitted temperature (D27), and `trueodds.load().predict()` at 17.7 ms
-p50 for 4 options on a 256-token state (spec 003, D28). Phase 5: **5A done**, ModernBERT-large
-(D29): pooled test accuracy 0.815, calibration the same, DBpedia-14 worse, twice the latency; v1
-stays the default. **5B done**, shared state encoding (spec 004, D30): −1.3 points, the same
-calibration, 50 questions about one state in 44 ms (v1: 1.27 s). **5C done**, latency on the CPU
-for all three (v1: 517 ms for 4 options on 256 tokens). **5D done** (D31): RTE, WiC and Rotten
-Tomatoes held out; accuracy transfers where the skill exists, calibration does not (overconfident
-on new tasks). **5E done** (D32): underconfidence on unseen labels comes from the labels, amplified
-by K. Later: score head, distilled labels. Runs are tracked in MLflow (D24). Decisions run to D32.
+**Status: all phases done (2026-09-25).** v1 is Phases 0–4: `phase2-templates/best` (pooled test
+accuracy 0.761, ECE 0.007 at its dev-fitted temperature, D27) served by `trueodds.load().predict()`
+at 17.7 ms p50 (spec 003, D28). Phase 5 measured five experiments against it: ModernBERT-large
+(D29), shared state encoding (spec 004, D30), latency on the CPU (5C), farther held-out datasets
+(D31: accuracy transfers where the skill exists, calibration does not) and options vs labels (D32).
+The score head and distilled labels are deferred (D33). The code is Apache-2.0 (`LICENSE`); no
+weights are published. Runs are tracked in MLflow (D24). Decisions run to D33.
 
 ## Project map
 
@@ -35,7 +31,7 @@ docs/
   DECISIONS.md          # what was decided and why, plus open questions
   SETUP.md              # verified install steps, measurements and workarounds
   LICENSES.md           # dataset and model licenses
-specs/                  # contracts for non-obvious interfaces, written when a phase starts (001–004)
+specs/                  # contracts for non-obvious interfaces, written when a phase starts (001-004)
 harness/                # evaluations: accuracy, zero-shot, calibration, latency; results/ holds the JSONs
 configs/                # one YAML per training run (Phase 1)
 src/trueodds/           # the package: data converters, model, training, inference (trueodds.load)

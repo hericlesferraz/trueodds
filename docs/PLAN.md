@@ -11,7 +11,7 @@ once Phase 0 produces the baselines.
 | 2 ✓ | Full training | Accuracy on every training dataset and on both held-out datasets is clearly above its baselines |
 | 3 ✓ | Calibration | Temperature scaling lowers ECE on test and on held-out, and the effect on held-out is reported apart |
 | 4 ✓ | Inference (v1) | `predict()` answers in tens of milliseconds, and many questions about one state are measured as a batch |
-| 5 | Experiments (after v1) | Each one is a run compared with the v1 report |
+| 5 ✓ | Experiments (after v1) | Each one is a run compared with the v1 report |
 
 The steps of the original plan map onto these phases: setup and data are Phase 0, the model is
 Phase 1, and evaluation is built in Phase 0 as the harness instead of after training (D1).
@@ -232,6 +232,9 @@ A second run follows D26: ten trained phrasings per task, 2 epochs, best checkpo
 
 ## Phase 5 — Experiments (after v1)
 
+**Done on 2026-09-25** (D33): 5A to 5E measured against v1 (D29–D32); the score head and the
+distilled labels deferred.
+
 Each experiment is one run, compared with the v1 report by the same harness. The rules of the
 earlier phases hold: checkpoint and temperature chosen on dev only (D6), peak VRAM measured under
 15 GB, results JSONs committed, a dated decision for each outcome. An experiment is done when its
@@ -419,7 +422,10 @@ options is a subset of the scores). DBpedia-14 (new labels) at K = 2, 4, 10, 14;
 by 0.06–0.08 in every model, Yahoo and AG News by at most 0.015; DBpedia-14's gap grows from
 −0.02/−0.03 at K = 2 to −0.17/−0.20 at K = 14.
 
-### Later
+### Deferred (D33)
+
+Not needed for what this project measures; kept here for when numeric answers or a specific
+domain are needed.
 
 - **Score head:** a numeric answer (regression) as a third kind of output, with its own metric and
   a dataset to train it.
