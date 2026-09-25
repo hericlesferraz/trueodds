@@ -23,7 +23,7 @@ This is a learning project, not a new method.
 
 **v1 (2026-09-24).** ModernBERT-base fine-tuned for one epoch on eight public datasets, with one
 temperature fitted on the dev split. Phases 0 to 4 of the plan are done. Phase 5 (experiments)
-is in progress: ModernBERT-large is measured below; shared state encoding is next. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
+is in progress: ModernBERT-large and shared state encoding are measured below. See [`docs/PLAN.md`](docs/PLAN.md) for the phases and exit criteria,
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design, and
 [`docs/DECISIONS.md`](docs/DECISIONS.md) for why things are the way they are.
 
@@ -146,6 +146,29 @@ HellaSwag, MMLU) and on CommonsenseQA, never trained on. It is not better calibr
 DBpedia-14, the unseen label set, it is less accurate and more underconfident than base. It also
 takes about twice as long (K = 4, 256-token state: 37.4 ms p50 against 17.7), so v1 stays the
 default model.
+
+### Experiment: shared state encoding (Phase 5B)
+
+The v1 model reads the state once per option. The shared-state variant reads it once, then every
+question and option in the same sequence, with attention masks that keep questions and options
+apart ([spec 004](specs/004-shared-state.md), D13). Compared with v1 the same way as -large
+([`2026-09-25-041921-compare.json`](harness/results/2026-09-25-041921-compare.json), D30):
+
+| | v1 | shared state |
+|---|---|---|
+| Pooled test accuracy | 0.761 | 0.747 (−1.3, interval −1.8 to −0.9) |
+| Pooled ECE at T | 0.007 | 0.010 (same within noise) |
+| CommonsenseQA / DBpedia-14 accuracy | 0.530 / 0.861 | 0.483 / 0.822 |
+| 1 question, 4 options, 256-token state (GPU / CPU) | 17.7 ms / 517 ms | 14.3 ms / 120 ms |
+| 50 questions about one state (GPU / CPU) | 1,270 ms / 53.7 s one by one | **44 ms / 1.54 s** batched |
+| Training time, 2 epochs | 246 min | 57 min |
+
+The state never sees the question, and that costs 1.3 points: more where the answer depends on
+reading the state for that question (ARC-Easy −4.0, HellaSwag −3.4), nothing on classifying a
+document (AG News, Yahoo, BoolQ). Calibration is unchanged. In return, 50 questions about one
+state take 44 ms instead of 1.27 s, which is what the Jev-style use (one state, many questions)
+needs. v1 stays the default; `trueodds.load("~/.trueodds/runs/phase5-shared/best")` loads the
+shared model with the same `predict` and `predict_batch`.
 
 ## Datasets
 

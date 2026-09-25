@@ -565,6 +565,55 @@ question D27 left (K itself or new labels), and a held-out set that is not topic
 
 ---
 
+## D30 — Shared state encoding: −1.3 points, same calibration, 16× faster on many questions
+*2026-09-25, Phase 5B*
+
+**Decision:** the shared-state model (`phase5-shared/best`, T = 1.068, spec 004) is kept as the
+measured alternative for the use D13 was about, many questions about one state; v1 stays the
+default of `trueodds.load()`. The comparison is recorded; nothing was tuned for it.
+
+**Setup:** v1's config with `architecture: shared`: the state once, then each question and its
+options in one packed sequence, masks keeping them apart (spec 004). Same 32-question step and
+16,384-token budget, `expandable_segments`, peak 11.89 GiB. 2 epochs in **57 minutes** (v1: 246),
+at the same ~25k tokens/s: each question is about 4.3× fewer tokens, since the state is not
+repeated per option. Best by dev NLL again at the end of epoch 1 (step 6,000: dev accuracy 0.745,
+NLL 0.646, ECE 0.015); epoch 2 again breaks calibration (ECE 0.06–0.10).
+
+**Result** (`harness/results/2026-09-25-041921-compare.json`, each at its own T, paired 95%
+intervals):
+
+- **What giving the state no view of the question costs: 1.3 points pooled.** Pooled test
+  accuracy 0.761 → 0.747 (−1.3, −1.8 to −0.9), NLL 0.614 → 0.643. The loss is where the answer
+  depends on reading the state for a particular question: ARC-Easy −4.0, HellaSwag −3.4, MNLI −1.7
+  to −2.2, MMLU −1.6. Where the state is a document to classify, nothing is lost: BoolQ −0.3, AG
+  News 0.0, Yahoo −0.6, ARC-Challenge −0.4 (all four intervals cross 0).
+- **Calibration in-domain is the same:** pooled ECE 0.010 at T against 0.007 (−0.002 to +0.007).
+  The temperature again changes nothing measurable (dev NLL 0.6464 → 0.6453).
+- **Held-out template gap ≤ 1.3 points** (MNLI 1.3, DBpedia-14 0.9, the rest ≤ 0.6).
+- **Held-out datasets lose more:** CommonsenseQA −4.7 points (0.530 → 0.483), DBpedia-14 −3.9
+  (0.861 → 0.822), ECE 0.166 → 0.186, underconfident like base (mean confidence 0.66 against
+  accuracy 0.82).
+- **Latency, the point of D13** (`2026-09-25-041810-latency.json`): **50 questions about a
+  256-token state in 44 ms** with `predict_batch`, against 709 ms one by one and **1,270 ms for v1**
+  one by one (the 5B target): 29× faster than v1, 16× than its own loop. 10 questions: 15 ms.
+  Every single request, up to 14 options on a 480-token state, sits at the ~14 ms overhead floor
+  (v1: 98 ms for that one), since the state is encoded once whatever K is. Packed and single
+  answers differ by up to 0.011 in probability on the GPU (bf16; v1's batch 0.013); the fp32 CPU
+  tests hold them to 1e-5.
+- **On the CPU** (`2026-09-25-041935-latency.json`, 5C): a 4-option question on a 256-token
+  state takes 120 ms (v1 517 ms), 14 options on 480 tokens 259 ms (v1 4.0 s, 15×), and 50
+  questions about one state 1.54 s with `predict_batch` (v1 one by one: 53.7 s, 35×). On the CPU
+  the saving shows on single requests too, since there is no overhead floor to hide it.
+
+**Why it is not the default:** it is 1.3 points less accurate in-domain and 4–5 points less on the
+held-out datasets, and the harness measures one question at a time, where v1 already meets its
+latency target. For a caller asking many questions about the same state (the Jev-style use), it
+answers 50 questions in less time than v1 takes for two (44 ms against 25 ms per question), with
+the same calibration. Which one to load
+depends on how many questions share a state, and both are measured.
+
+---
+
 ## Open questions
 
 - **Are the held-out datasets far enough?** CommonsenseQA is multiple choice like ARC and HellaSwag,

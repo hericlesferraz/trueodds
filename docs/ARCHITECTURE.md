@@ -72,6 +72,9 @@ What changes: the state is encoded without seeing the question or the options, a
 `predict_batch` puts every question about one state into one sequence. Training and the harness
 still read one question per sequence, since the datasets have one question per state.
 
+Measured (D30): 1.3 points below v1 in pooled test accuracy, the same calibration, and 50
+questions about one state in 44 ms instead of 1.27 s; training reads about 4.3× fewer tokens.
+
 Answer formats:
 
 | Task | Options |

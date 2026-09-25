@@ -17,8 +17,10 @@ with its baselines (spec 002), the model, the training loop, `phase2-templates/b
 accuracy 0.761) with its dev-fitted temperature (D27), and `trueodds.load().predict()` at 17.7 ms
 p50 for 4 options on a 256-token state (spec 003, D28). Phase 5: **5A done**, ModernBERT-large
 (D29): pooled test accuracy 0.815, calibration the same, DBpedia-14 worse, twice the latency; v1
-stays the default. **5B** (shared state encoding, spec 004) is built and tested and trains next;
-**5C** (latency on the CPU) is planned. Runs are tracked in MLflow (D24). Decisions run to D29.
+stays the default. **5B done**, shared state encoding (spec 004, D30): −1.3 points, the same
+calibration, 50 questions about one state in 44 ms (v1: 1.27 s). **5C done**, latency on the CPU
+for all three (v1: 517 ms for 4 options on 256 tokens). Next: the score head and the distilled
+labels, each once its dataset is chosen. Runs are tracked in MLflow (D24). Decisions run to D30.
 
 ## Project map
 

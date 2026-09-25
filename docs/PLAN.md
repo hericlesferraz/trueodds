@@ -287,8 +287,9 @@ question scores the same alone or packed with others (`specs/004-shared-state.md
       scores the same alone and packed, permuting options permutes probabilities, padded options
       get 0, no option sees another. *`src/trueodds/shared.py`, `tests/test_shared.py` (12 tests);
       with every token in the state the masks give ModernBERT's own hidden states.*
-- [ ] `configs/phase5-shared.yaml` at v1 settings; the VRAM probe; full run; evaluate, calibrate,
-      plots and latency as for 5A.
+- [x] `configs/phase5-shared.yaml` at v1 settings; the VRAM probe; full run; evaluate, calibrate,
+      plots and latency as for 5A. *11.89 GiB peak; 2 epochs in 57 minutes (v1: 246); best by dev
+      NLL at step 6,000. `harness/results/2026-09-25-04*`.*
 - [x] `predict_batch` packs all questions about one state into one sequence. *`pack=True` through
       `predict.predict_scores`, the harness's path; tested equal to `predict` one by one.*
 
@@ -297,6 +298,17 @@ question scores the same alone or packed with others (`specs/004-shared-state.md
   interval: this is what giving the state no view of the question costs.
 - The Phase 4 batch timings measured again. Target: 50 questions about a 256-token state faster
   than v1 answering them one by one (1.27 s).
+
+**Met on 2026-09-25** (D30, `harness/results/2026-09-25-041921-compare.json`):
+- Pooled test accuracy 0.761 → 0.747 (**−1.3 points**, 95% interval −1.8 to −0.9), NLL 0.614 →
+  0.643: the cost of a state that never sees the question. ARC-Easy −4.0 and HellaSwag −3.4; BoolQ,
+  AG News, Yahoo and ARC-Challenge unchanged within their intervals.
+- Pooled ECE the same within noise (0.007 → 0.010 at each model's T); held-out template gap ≤ 1.3.
+- Held-out: CommonsenseQA −4.7, DBpedia-14 −3.9.
+- **50 questions about a 256-token state: 44 ms** with `predict_batch` (target: under v1's
+  1,270 ms), 29× faster than v1 and 16× faster than its own loop. Single requests stay at the
+  ~14 ms floor up to 14 options on 480 tokens.
+- v1 stays the default; the shared model is the one to load for many questions about one state.
 
 ### 5C — Latency on the CPU
 
@@ -311,8 +323,8 @@ would slow the run and be noisy).
       tokens, p50 and p95 per request; and 10 and 50 questions about one state, batch against one
       by one. *`harness/results/2026-09-25-015515-latency.json` (v1) and `-021711-latency.json`
       (-large); 8 threads, fp32, 30 requests per cell after 3 warmup calls.*
-- [ ] The same grid for the 5A and 5B checkpoints once trained (the shared state should gain most
-      on the CPU). *5A done; 5B after its run.*
+- [x] The same grid for the 5A and 5B checkpoints once trained (the shared state should gain most
+      on the CPU). *`2026-09-25-021711-latency.json` (-large), `-041935-latency.json` (shared).*
 
 **Exit criteria**
 - The CPU grid reported next to the GPU one for v1, with the CPU/GPU ratio per cell. Speed-ups
@@ -342,6 +354,22 @@ would slow the run and be noisy).
   with `predict_batch` and 53.7 s one by one (0.81×; -large 0.92×). The likely cause, not yet
   measured: the batch's micro-batches (the eval budget, 32,768 tokens) pad sequences of different
   lengths together, and the CPU pays for padding in full; one by one, no sequence is padded.
+
+**Shared state (5B) on the CPU** (p50; ratio to v1 on the CPU):
+
+| K | state 64 tokens | 256 tokens | 480 tokens |
+|---|---|---|---|
+| 2 | 52 ms (1.4×) | 117 ms (1.8×) | 221 ms (2.2×) |
+| 4 | 54 ms (2.2×) | **120 ms (4.3×)** | 217 ms (4.6×) |
+| 14 | 66 ms (6.4×) | 135 ms (15×) | 259 ms (15×) |
+
+The state is read once, so K barely matters: 14 options cost 15 to 27% more than 2. Many questions
+about one state: 50 in 1.54 s with `predict_batch`, 6.3 s one by one, and 53.7 s for v1 one by one
+(35×). Here packing helps even on the CPU (4.1×), because one packed sequence per state leaves no
+padding between questions.
+
+**Met on 2026-09-25:** all three models across the grid, with the CPU/GPU ratios above. The
+speed-ups (thread count, lower-precision weights, ONNX Runtime) remain untried.
 
 ### Later
 
