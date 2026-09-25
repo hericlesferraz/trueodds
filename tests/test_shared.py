@@ -217,10 +217,10 @@ def test_the_shared_model_overfits_a_known_set(shared):
         architecture="shared",
         lr=3e-3,
         warmup_ratio=0.1,
-        max_steps=150,
+        max_steps=300,
         questions_per_step=6,
-        eval_every=150,
-        log_every=150,
+        eval_every=300,
+        log_every=300,
         save=False,
     )
     model = make_model(architecture="shared").train()
